@@ -1,0 +1,9 @@
+streamlit
+obspy
+pandas
+numpy
+scipy
+plotly
+google-genai
+python-dotenv
+watchdog
