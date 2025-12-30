@@ -54,20 +54,31 @@ col1, col2 = st.columns([3, 1])
 
 
 with col1:
+    filtered_df["name"] = filtered_df["time"].dt.strftime("Evento %Y-%m-%d %H:%M:%S")
     st.markdown("### Mappa Eventi")
     fig_map = px.scatter_map(
         filtered_df,
+        # Marker settings
         lat="latitude",
         lon="longitude",
-        color="magnitude",
         size="magnitude",
-        color_continuous_scale=px.colors.cyclical.IceFire,
         size_max=15,
+        opacity=0.7,
+        color="magnitude",
+        color_continuous_scale=px.colors.sequential.Burgyl,
+        hover_name="name",
+        hover_data=["magnitude", "depth", "latitude", "longitude"],
+        labels={
+            "magnitude": "Magnitudo", 
+            "depth": "Profondità (km)",
+            "latitude": "Latitudine", 
+            "longitude": "Longitudine"
+        },
+        # Map settings
         zoom=5,
         center={"lat": 42.0, "lon": 12.5},
         map_style="carto-darkmatter",
-        hover_data=["time", "depth"],
-        title=f"Eventi Sismici ({len(filtered_df)} totali)"
+        title=f"Eventi Sismici ({len(filtered_df)} totali)",
     )
     st.plotly_chart(fig_map, width="stretch")
 
