@@ -64,7 +64,7 @@ with tab1:
         fig_gr = px.scatter(gr_df, x="Magnitude", y="LogCount", title=f"Gutenberg-Richter Plot (b-value={b_value:.2f})")
         
         # Add fit line
-        x_range = np.linspace(2.0, 6.5, 100)
+        x_range = np.linspace(2.0, 10.5, 100)
         y_fit = a_value - b_value * x_range
         fig_gr.add_trace(go.Scatter(x=x_range, y=y_fit, mode='lines', name=f'Fit (b={b_value:.2f})', line=dict(color='red', dash='dash')))
         
@@ -72,8 +72,10 @@ with tab1:
         
         if 0.8 <= b_value <= 1.2:
             st.success(f"✅ Il b-value ({b_value:.2f}) è coerente con la sismicità tettonica standard (~1.0).")
+        elif b_value < 0.8:
+            st.warning(f"⚠️ b-value anomalo ({b_value:.2f}). Potenziale alto stress sismico.")
         else:
-            st.warning(f"⚠️ b-value anomalo ({b_value:.2f}). Possibile incompletezza del catalogo o sciame sismico intenso.")
+            st.warning(f"⚠️ b-value anomalo ({b_value:.2f}). Potenziale sciame sismico a bassa magnitudo.")
 
     st.markdown("---")
     st.markdown("### Analisi Periodicità (Waiting Time)")
@@ -92,8 +94,8 @@ with tab1:
     
     st.info("""
     **Interpretazione**:
-    - **Esponenziale (Decrescente)** = Processo di Poisson (Casuale - La norma).
-    - **Campana (Gaussiana)** = Processo Periodico (es. "Ogni X ore/anni").
+    - **Esponenziale (Decrescente)** = Processo di Poisson (Gli eventi sono indipendenti dal tempo).
+    - **Campana (Gaussiana)** = Processo Periodico (Gli eventi sono correlati nel tempo).
     """)
 
 with tab2:
