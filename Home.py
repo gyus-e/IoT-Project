@@ -74,5 +74,5 @@ render_ai_sidebar(context_text="Home Page. Overview of the project.")
 
 with st.sidebar:
     st.write("---")
-    st.caption("Project by Giuseppe")
+    st.caption("Project by Giuseppe & Giuseppe")
     st.caption("University IoT Exam")
