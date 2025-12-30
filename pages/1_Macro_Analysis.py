@@ -81,16 +81,8 @@ with col1:
         title=f"Eventi Sismici ({len(filtered_df)} totali)",
     )
     st.plotly_chart(fig_map, width="stretch")
-
-with col2:
-    st.markdown("### Statistiche Periodo")
-    st.metric("Totale Eventi", len(filtered_df))
-    if not filtered_df.empty:
-        max_event = filtered_df.loc[filtered_df['magnitude'].idxmax()]
-        st.metric("Evento Max (Magnitudo)", f"{max_event['magnitude']}")
-        st.write(f"**Data**: {max_event['time'].date()}")
-        st.write(f"**Profondità**: {max_event['depth']} km")
     
+
     st.markdown("### Timeline")
     # Time distribution
     filtered_df['year_month'] = filtered_df['time'].dt.to_period('M').astype(str)
@@ -99,13 +91,34 @@ with col2:
     fig_hist.update_xaxes(showticklabels=False)
     st.plotly_chart(fig_hist, width="stretch")
 
+
     st.markdown("### Pattern Spazio-Temporale (Migration)")
     st.markdown("_Permette di vedere se i terremoti si 'spostano' nel tempo (es. sequenze lungo una faglia)._")
-    fig_st = px.scatter(filtered_df, x="time", y="latitude", 
-                        color="magnitude", size="magnitude",
-                        title="Space-Time Plot (Evoluzione Latitudinale)",
-                        color_continuous_scale=px.colors.cyclical.IceFire)
+    fig_st = px.scatter(
+        filtered_df, 
+        x="time", 
+        y="latitude", 
+        color="magnitude", 
+        # size="magnitude",
+        title="Space-Time Plot (Evoluzione Latitudinale)",
+        color_continuous_scale=px.colors.sequential.Burgyl,
+    )
     st.plotly_chart(fig_st, width="stretch")
+
+
+with col2:
+
+    st.markdown("### Statistiche Periodo")
+    st.metric("Totale Eventi", len(filtered_df))
+    if not filtered_df.empty:
+        max_event = filtered_df.loc[filtered_df['magnitude'].idxmax()]
+        st.metric("Evento Max (Magnitudo)", f"{max_event['magnitude']}")
+        st.write(f"**Data**: {max_event['time'].date()}")
+        st.write(f"**Coordinate**: ({max_event['latitude']}, {max_event['longitude']})")
+        st.write(f"**Profondità**: {max_event['depth']} km")
+    else:
+        max_event = None
+        st.info("Nessun evento trovato con i filtri attuali.")
 
 from utils.ai_assistant import render_ai_sidebar
 
