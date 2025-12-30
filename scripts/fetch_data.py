@@ -14,13 +14,21 @@ def fetch_catalog():
     print("Fetching Earthquake Catalog (2000-2024) in chunks...")
     all_data = []
     
-    # Split request into 5-year chunks to avoid 20k limit
+    # Split request into 2-year chunks to avoid 20k limit
     chunks = [
-        ("2000-01-01", "2004-12-31"),
-        ("2005-01-01", "2009-12-31"),
-        ("2010-01-01", "2014-12-31"),
-        ("2015-01-01", "2019-12-31"),
-        ("2020-01-01", "2024-12-31")
+        ("2000-01-01", "2001-12-31"),
+        ("2002-01-01", "2003-12-31"),
+        ("2004-01-01", "2005-12-31"),
+        ("2006-01-01", "2007-12-31"),
+        ("2008-01-01", "2009-12-31"),
+        ("2010-01-01", "2011-12-31"),
+        ("2012-01-01", "2013-12-31"),
+        ("2014-01-01", "2015-12-31"),
+        ("2016-01-01", "2017-12-31"),
+        ("2018-01-01", "2019-12-31"),
+        ("2020-01-01", "2021-12-31"),
+        ("2022-01-01", "2023-12-31"),
+        ("2024-01-01", "2025-12-31"),
     ]
 
     for start_str, end_str in chunks:
@@ -29,10 +37,15 @@ def fetch_catalog():
             starttime = UTCDateTime(start_str)
             endtime = UTCDateTime(end_str)
             
-            catalog = client.get_events(starttime=starttime, endtime=endtime, 
-                                        minmagnitude=2.5, 
-                                        minlatitude=35.0, maxlatitude=48.0, 
-                                        minlongitude=6.0, maxlongitude=19.0)
+            catalog = client.get_events(
+                starttime=starttime, 
+                endtime=endtime, 
+                minmagnitude=2.5, 
+                minlatitude=27.0, 
+                maxlatitude=48.0, 
+                minlongitude=-7.0, 
+                maxlongitude=37.5,
+            )
             
             print(f"  -> Found {len(catalog)} events.")
             
