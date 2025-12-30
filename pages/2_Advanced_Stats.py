@@ -4,16 +4,39 @@ import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 
-from utils.load_data import df
+from utils.load_data import df as unfiltered_df
 
 st.set_page_config(page_title="Advanced Stats", page_icon="📈", layout="wide")
 
 st.markdown("# 📈 Analisi Statistica Avanzata")
 st.markdown("Verifica delle leggi fisiche (Gutenberg-Richter) e anomalie (Z-Score).")
 
-if df is None:
+if unfiltered_df is None:
     st.error("Dati non trovati.")
     st.stop()
+
+# Sidebar Filters
+st.sidebar.header("Filtri")
+
+min_year = int(unfiltered_df['time'].dt.year.min())
+max_year = int(unfiltered_df['time'].dt.year.max())
+max_depth = unfiltered_df['depth'].max()
+min_mag = unfiltered_df['magnitude'].min()
+max_mag = unfiltered_df['magnitude'].max()
+
+years = st.sidebar.slider("Intervallo Anni", min_year, max_year, (min_year, max_year))
+depth = st.sidebar.slider("Profondità (km)", 0.0, max_depth, (0.0, max_depth), 10.0)
+magnitude = st.sidebar.slider("Magnitudo", 0.0, 10.5, (min_mag, max_mag), 0.5)
+
+# Apply filters
+df = unfiltered_df[
+    (unfiltered_df['time'].dt.year >= years[0]) & 
+    (unfiltered_df['time'].dt.year <= years[1]) & 
+    (unfiltered_df['magnitude'] >= magnitude[0]) & 
+    (unfiltered_df['magnitude'] <= magnitude[1]) & 
+    (unfiltered_df['depth'] >= depth[0]) & 
+    (unfiltered_df['depth'] <= depth[1])
+].copy()
 
 tab1, tab2 = st.tabs(["Gutenberg-Richter", "Z-Score Analysis"])
 
