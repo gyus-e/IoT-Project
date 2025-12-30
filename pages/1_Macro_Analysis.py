@@ -123,12 +123,30 @@ with col2:
 from utils.ai_assistant import render_ai_sidebar
 
 # Dynamic Context for AI
+active_filters_string = f"""
+Filtri Attivi:
+- Anni: {years[0]} - {years[1]}
+- Magnitudo: {magnitude[0]} - {magnitude[1]}
+- Profondità: {depth[0]} - {depth[1]} km
+"""
+
+if max_event is not None:
+    max_event_string = f"""
+    Evento con massima magnitudo:
+    - Magnitudo: {max_event['magnitude']}, 
+    - Profondità: {max_event['depth']} km,
+    - Coordinate ({max_event['latitude']}, {max_event['longitude']}),
+    - Data {max_event['time'].date()}.
+    """
+else:
+    max_event_string = "- Nessun evento trovato con i filtri attuali."
+
 context = f"""
 Stai analizzando la pagina Macro Analisi.
 DATI GENERALI:
 - Eventi visualizzati: {len(filtered_df)}
-- Filtri: Anni {years[0]}-{years[1]}, Magnitudo min {min_mag}.
-- Evento Max: {filtered_df['magnitude'].max() if not filtered_df.empty else 'N/A'}
+{active_filters_string}
+{max_event_string}
 
 NUOVI GRAFICI (PATTERN RECOGNITION):
 - Grafico Spazio-Temporale (Latitude vs Time): Serve a identificare la "migrazione sismica". 
