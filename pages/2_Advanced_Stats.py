@@ -3,27 +3,13 @@ import pandas as pd
 import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
-import os
-from scipy.stats import norm
+
+from utils.load_data import df
 
 st.set_page_config(page_title="Advanced Stats", page_icon="📈", layout="wide")
 
 st.markdown("# 📈 Analisi Statistica Avanzata")
 st.markdown("Verifica delle leggi fisiche (Gutenberg-Richter) e anomalie (Z-Score).")
-
-# Load Data
-DATA_DIR = os.path.join(os.path.dirname(__file__), '..', 'data')
-catalog_path = os.path.join(DATA_DIR, 'catalog.csv')
-
-@st.cache_data
-def load_data():
-    if not os.path.exists(catalog_path):
-        return None
-    df = pd.read_csv(catalog_path)
-    df['time'] = pd.to_datetime(df['time'])
-    return df
-
-df = load_data()
 
 if df is None:
     st.error("Dati non trovati.")

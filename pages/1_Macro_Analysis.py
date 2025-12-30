@@ -1,26 +1,11 @@
 import streamlit as st
-import pandas as pd
 import plotly.express as px
-import os
+from utils.load_data import df
 
 st.set_page_config(page_title="Macro Analysis", page_icon="🌍", layout="wide")
 
 st.markdown("# 🌍 Macro Analisi Spazio-Temporale")
-st.markdown("Visualizzazione dell'attività sismica in Italia (2000-2024).")
-
-# Load Data
-DATA_DIR = os.path.join(os.path.dirname(__file__), '..', 'data')
-catalog_path = os.path.join(DATA_DIR, 'catalog.csv')
-
-@st.cache_data
-def load_data():
-    if not os.path.exists(catalog_path):
-        return None
-    df = pd.read_csv(catalog_path)
-    df['time'] = pd.to_datetime(df['time'])
-    return df
-
-df = load_data()
+st.markdown("Visualizzazione dell'attività sismica nel Mediterraneo (2000-2025).")
 
 if df is None:
     st.error("Dataset 'catalog.csv' non trovato. Esegui lo script di setup!")

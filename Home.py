@@ -2,6 +2,8 @@ import streamlit as st
 import os
 import pandas as pd
 
+import utils.load_data # preload data to speedup app
+
 st.set_page_config(
     page_title="IoT Earthquake Analytics",
     page_icon="🌋",
