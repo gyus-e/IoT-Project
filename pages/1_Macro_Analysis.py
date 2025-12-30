@@ -115,7 +115,13 @@ with col2:
         st.metric("Evento Max (Magnitudo)", f"{max_event['magnitude']}")
         st.write(f"**Data**: {max_event['time'].date()}")
         st.write(f"**Coordinate**: ({max_event['latitude']}, {max_event['longitude']})")
-        st.write(f"**Profondità**: {max_event['depth']} km")
+        st.write(f"**Profondità**: {max_event['depth']} m")
+
+        st.metric("Mese con più Eventi",
+                  f"{filtered_df['time'].dt.to_period('M').mode()[0]} ({len(filtered_df[filtered_df['time'].dt.to_period('M') == filtered_df['time'].dt.to_period('M').mode()[0]])} eventi)")
+        
+        st.metric("Area più Attiva (Lat/Lon)",
+                  f"({filtered_df['latitude'].mode()[0]:.2f}, {filtered_df['longitude'].mode()[0]:.2f})")
     else:
         max_event = None
         st.info("Nessun evento trovato con i filtri attuali.")
