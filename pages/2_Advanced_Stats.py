@@ -16,7 +16,7 @@ if unfiltered_df is None:
     st.error("Dati non trovati.")
     st.stop()
 
-filtered_df, years, depth, magnitude = apply_filters(unfiltered_df)
+df, years, depth, magnitude = apply_filters(unfiltered_df)
 
 tab1, tab2 = st.tabs(["Gutenberg-Richter", "Z-Score Analysis"])
 
