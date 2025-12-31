@@ -33,6 +33,7 @@ def fetch_catalog():
 
     for start_str, end_str in chunks:
         print(f"  Requesting {start_str} to {end_str}...")
+
         try:
             starttime = UTCDateTime(start_str)
             endtime = UTCDateTime(end_str)
@@ -50,20 +51,33 @@ def fetch_catalog():
             print(f"  -> Found {len(catalog)} events.")
             
             for event in catalog:
+
                 try:
                     origin = event.origins[0]
                     mag = event.magnitudes[0].mag
-                    all_data.append({
+
+                    event_data = {
                         "time": origin.time.datetime,
                         "latitude": origin.latitude,
                         "longitude": origin.longitude,
                         "depth": origin.depth / 1000.0 if origin.depth else 0, # km
-                        "magnitude": mag
-                    })
+                        "magnitude": mag,
+                        "magnitude_type": event.magnitudes[0].magnitude_type if event.magnitudes else None,
+                        "azimuthal_gap": origin.quality.azimuthal_gap if origin.quality and origin.quality.azimuthal_gap else None,
+                        "used_phase_count": origin.quality.used_phase_count if origin.quality and origin.quality.used_phase_count else None,
+                        "standard_error": origin.quality.standard_error if origin.quality and origin.quality.standard_error else None,
+                        "horizontal_uncertainty": origin.origin_uncertainty.horizontal_uncertainty if origin.origin_uncertainty else None,
+                        "depth_uncertainty": origin.depth_errors.uncertainty if origin.depth_errors and origin.depth_errors.uncertainty else None,
+                    }
+
+                    all_data.append(event_data)
+
                 except IndexError:
                     continue
+
         except Exception as e:
             print(f"  Error fetching chunk {start_str}: {e}")
+
 
     if all_data:
         df = pd.DataFrame(all_data)
@@ -74,6 +88,7 @@ def fetch_catalog():
         print(f"Total Catalog saved to {output_path} ({len(df)} events)")
     else:
         print("No data fetched.")
+
 
 def fetch_waveform_earthquake():
     print("Fetching Earthquake Waveform (Amatrice 2016)...")
@@ -141,6 +156,7 @@ def fetch_waveform_napoli():
             print("Napoli waveform saved from backup station.")
         except Exception as e2:
             print(f"Failed backup fetch: {e2}")
+
 
 if __name__ == "__main__":
     fetch_catalog()
