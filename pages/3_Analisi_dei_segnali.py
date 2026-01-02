@@ -103,21 +103,21 @@ with col2:
     if "Napoli" in scenario:
         st.caption("Nota il picco intorno a **2-3 Hz**: è il ritmo dei salti dei tifosi ('Chi non salta...')!")
 
-from utils.ai_assistant import render_ai_sidebar
+# from utils.ai_assistant import render_ai_sidebar
 
-# Dynamic Context
-status_msg = "ALLARME SISMICO" if max_z > 5 and "Terremoto" in scenario else "VIBRAZIONE ANTROPICA" if max_z > 5 else "NORMALE"
+# # Dynamic Context
+# status_msg = "ALLARME SISMICO" if max_z > 5 and "Terremoto" in scenario else "VIBRAZIONE ANTROPICA" if max_z > 5 else "NORMALE"
 
-context = f"""
-Stai analizzando la pagina Segnali in Tempo Reale.
-SCENARIO ATTIVO: {scenario}
+# context = f"""
+# Stai analizzando la pagina Segnali in Tempo Reale.
+# SCENARIO ATTIVO: {scenario}
 
-DATI RILEVATI ORA:
-- Max Z-Score (Anomalia): {max_z:.2f}
-- Soglia di allarme: 5.0
-- Stato Attuale: {status_msg}
-- Frequenze dominanti visibili nello spettro.
+# DATI RILEVATI ORA:
+# - Max Z-Score (Anomalia): {max_z:.2f}
+# - Soglia di allarme: 5.0
+# - Stato Attuale: {status_msg}
+# - Frequenze dominanti visibili nello spettro.
 
-Spiega all'utente perché, basandosi su questi numeri, si tratta di un terremoto o di un evento artificiale (stadio).
-"""
-render_ai_sidebar(context_text=context)
+# Spiega all'utente perché, basandosi su questi numeri, si tratta di un terremoto o di un evento artificiale (stadio).
+# """
+# render_ai_sidebar(context_text=context)

@@ -1,17 +1,21 @@
 import streamlit as st
-import os
-import pandas as pd
+import plotly.express as px
 
-import utils.load_data # preload data to speedup app
+from utils.load_data import df as unfiltered_df
+from utils.sidebar import Sidebar
+from utils.max_event import get_max_event
+# from utils.ai_assistant import render_ai_sidebar
+
 
 st.set_page_config(
-    page_title="IoT Earthquake Analytics",
-    page_icon="🌋",
+    # page_title="Home",
+    # page_icon="🌋",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded",
 )
 
-# Custom CSS for "Premium" look
+
+# Custom CSS
 st.markdown("""
 <style>
     .stApp {
@@ -31,50 +35,102 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-st.title("🌋 IoT Earthquake & Noise Analytics")
-st.markdown("### Advanced Monitoring Dashboard for Seismology and Urban Sensing")
 
-st.markdown("""
-Questa dashboard è parte del progetto universitario di IoT.
-Analizza dati sismici reali (**INGV**) e dimostra come distinguere eventi naturali da eventi antropici (es. tifoseria stadio)
-utilizzando tecniche di Signal Processing e Machine Learning.
-""")
+if unfiltered_df is None:
+    st.error("Dataset 'catalog.csv' non trovato. Esegui lo script di setup!")
+    st.stop()
+Sidebar.init_sidebar(unfiltered_df)
+df, years, depth, magnitude = Sidebar.apply_filters(unfiltered_df)
 
-# Check Data Status
-data_dir = os.path.join(os.path.dirname(__file__), 'data')
-catalog_path = os.path.join(data_dir, 'catalog.csv')
 
-col1, col2, col3 = st.columns(3)
+col1, col2 = st.columns([3, 1])
 
 with col1:
-    st.markdown('<div class="metric-card">', unsafe_allow_html=True)
-    st.metric("Source", "INGV Open Data", "Real-time")
-    st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown("### Mappa degli Eventi Sismici")
+    df["name"] = df["time"].dt.strftime("Evento %Y-%m-%d %H:%M:%S")
+    fig_map = px.scatter_map(
+        df,
+        # Marker settings
+        lat="latitude",
+        lon="longitude",
+        size="magnitude",
+        size_max=15,
+        opacity=0.7,
+        color="magnitude",
+        color_continuous_scale=px.colors.sequential.Burgyl,
+        hover_name="name",
+        hover_data=["magnitude", "depth", "latitude", "longitude"],
+        labels={
+            "magnitude": "Magnitudo", 
+            "depth": "Profondità (km)",
+            "latitude": "Latitudine", 
+            "longitude": "Longitudine"
+        },
+        # Map settings
+        zoom=5,
+        center={"lat": 42.0, "lon": 12.5},
+        map_style="carto-darkmatter",
+        # title=f"Eventi Sismici ({len(filtered_df)} totali)",
+        height=800,
+    )
+    st.plotly_chart(fig_map, width="stretch")
 
 with col2:
-    st.markdown('<div class="metric-card">', unsafe_allow_html=True)
-    if os.path.exists(catalog_path):
-        df = pd.read_csv(catalog_path)
-        last_date = df['time'].max()[:10]
-        st.metric("Catalog Status", "Connected", f"Events: {len(df)}")
+    st.markdown("### Statistiche")
+    st.metric("Totale Eventi", len(df))
+    if not df.empty:
+        max_event = get_max_event(df)
+        if max_event is not None:
+            st.metric("Magnitudo più alta registrata", f"{max_event['magnitude']}")
+            st.metric("Data evento con massima magnitudo", f"{max_event['time'].date()}")
+            st.metric("Coordinate evento con massima magnitudo", f"({max_event['latitude']}, {max_event['longitude']})")
+            st.metric("Profondità evento con massima magnitudo", f"{max_event['depth']} km")
+
+        mean_mag = df['magnitude'].mean()
+        std_mag = df['magnitude'].std()
+        st.metric("Magnitudo Media", f"{mean_mag:.2f}")
+        st.metric("Deviazione Std Magnitudo", f"{std_mag:.2f}")
+
+        st.metric("Mese con più Eventi",
+                  f"{df['time'].dt.to_period('M').mode()[0]} ({len(df[df['time'].dt.to_period('M') == df['time'].dt.to_period('M').mode()[0]])} eventi)")
+        
+        st.metric("Area più Attiva (Lat/Lon)",
+                  f"({df['latitude'].mode()[0]:.2f}, {df['longitude'].mode()[0]:.2f})")
     else:
-        st.metric("Catalog Status", "Not Found", "Run Setup Script", delta_color="inverse")
-    st.markdown('</div>', unsafe_allow_html=True)
+        max_event = None
+        st.info("Nessun evento trovato con i filtri attuali.")
 
-with col3:
-    st.markdown('<div class="metric-card">', unsafe_allow_html=True)
-    st.metric("System Mode", "Analysis", "Active")
-    st.markdown('</div>', unsafe_allow_html=True)
 
-st.divider()
 
-st.info("👈 Seleziona una pagina dalla barra laterale per iniziare l'analisi.")
+# # Dynamic Context for AI
+# active_filters_string = f"""
+# Filtri Attivi:
+# - Anni: {years[0]} - {years[1]}
+# - Magnitudo: {magnitude[0]} - {magnitude[1]}
+# - Profondità: {depth[0]} - {depth[1]} km
+# """
 
-# Sidebar info
-from utils.ai_assistant import render_ai_sidebar
-render_ai_sidebar(context_text="Home Page. Overview of the project.")
+# if max_event is not None:
+#     max_event_string = f"""
+#     Evento con massima magnitudo:
+#     - Magnitudo: {max_event['magnitude']}, 
+#     - Profondità: {max_event['depth']} km,
+#     - Coordinate ({max_event['latitude']}, {max_event['longitude']}),
+#     - Data {max_event['time'].date()}.
+#     """
+# else:
+#     max_event_string = "- Nessun evento trovato con i filtri attuali."
 
-with st.sidebar:
-    st.write("---")
-    st.caption("Project by Giuseppe & Giuseppe")
-    st.caption("University IoT Exam")
+# context = f"""
+# Stai analizzando la pagina Macro Analisi.
+# DATI GENERALI:
+# - Eventi visualizzati: {len(filtered_df)}
+# {active_filters_string}
+# {max_event_string}
+
+# NUOVI GRAFICI (PATTERN RECOGNITION):
+# - Grafico Spazio-Temporale (Latitude vs Time): Serve a identificare la "migrazione sismica". 
+#   Se vedi diagonali di punti, significa che i terremoti si spostano lungo una faglia.
+#   Spiega all'utente se la distribuzione appare casuale (nuvole sparse) o se ci sono linee di tendenza (migrazione).
+# """
+# render_ai_sidebar(context_text=context)
