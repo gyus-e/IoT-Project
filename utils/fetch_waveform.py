@@ -16,3 +16,4 @@ def fetch_waveform(station: str, starttime: UTCDateTime, duration: int = 180, ne
     
     except Exception as e:
         print(f"Error fetching waveform: {e}")
+        return None

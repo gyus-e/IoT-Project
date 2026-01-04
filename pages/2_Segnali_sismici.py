@@ -49,7 +49,7 @@ starttime = UTCDateTime(UTCDateTime.now() - 180)
 
 tab_ovo, tab_csft, tab_ioca, tab_sorr = st.tabs(stations)
 
-def load_tab(station: str, starttime: UTCDateTime, duration=120):
+def load_tab(station: str, starttime: UTCDateTime, duration=120, debounce_time=2):
     df = fetch_waveform(
         station=station, 
         starttime=starttime,
@@ -57,9 +57,12 @@ def load_tab(station: str, starttime: UTCDateTime, duration=120):
         channel=stations_channels[station]
     )
     if df is None:
-        st.markdown("Loading...")
-        time.sleep(5) # Debounce time
-        load_tab(station, starttime, duration) # Retry recursively
+        time.sleep(debounce_time) # Debounce time
+        debounce_time *= 2
+        if debounce_time > 16:
+            st.error("Impossibile caricare i dati dal server. Riprova più tardi.")
+            return
+        load_tab(station, starttime, duration, debounce_time) # Retry recursively
         return
 
     st.markdown (f"## Stazione: {stations_names[station]} ({station})")
@@ -71,7 +74,7 @@ def load_tab(station: str, starttime: UTCDateTime, duration=120):
         fig = go.Figure()
         fig.add_trace(go.Scatter(x=df['times'], y=df['velocity'], line=dict(color=stations_colors[station], width=1), name="Velocity"))
         fig.update_layout(height=300, margin=dict(l=0, r=0, t=30, b=0), xaxis_title="Time (s)", yaxis_title="Velocity (m/s)")
-        st.plotly_chart(fig, use_container_width=True, height=300)
+        st.plotly_chart(fig, width='stretch', height=300)
 
         st.markdown("#### Dominio delle frequenze")
         # Simple FFT of the whole signal
@@ -81,7 +84,7 @@ def load_tab(station: str, starttime: UTCDateTime, duration=120):
         # Filter useful range 0-20Hz
         fft_df = fft_df[fft_df['Freq (Hz)'] < 20]
         fig_fft = px.line(fft_df, x='Freq (Hz)', y='Power')
-        st.plotly_chart(fig_fft, use_container_width=True, height=300)
+        st.plotly_chart(fig_fft, width='stretch', height=300)
 
     with col2:
         # Calculate simple Z-Score on a rolling window
