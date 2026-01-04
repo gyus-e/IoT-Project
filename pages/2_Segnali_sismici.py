@@ -1,3 +1,4 @@
+import time
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -57,6 +58,7 @@ def load_tab(station: str, starttime: UTCDateTime, duration=120):
     )
     if df is None:
         st.markdown("Loading...")
+        time.sleep(5) # Debounce time
         load_tab(station, starttime, duration) # Retry recursively
         return
 
