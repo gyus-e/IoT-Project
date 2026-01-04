@@ -1,12 +1,18 @@
 import streamlit as st
-import pandas as pd
-import numpy as np
 import plotly.express as px
-import plotly.graph_objects as go
 
-from utils.load_data import df as unfiltered_df
 from utils.sidebar import Sidebar
+from utils.load_data import load_data
 # from utils.ai_assistant import render_ai_sidebar
+
+
+unfiltered_df = load_data()
+if unfiltered_df is None:
+    st.error("Dataset 'catalog.csv' non trovato. Esegui lo script di setup!")
+    st.stop()
+Sidebar.init_sidebar(unfiltered_df)
+df, years, depth, magnitude = Sidebar.apply_filters(unfiltered_df)
+
 
 st.set_page_config(
     # page_title="Macro Analysis", 
@@ -14,13 +20,6 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded",
 )
-
-
-if unfiltered_df is None:
-    st.error("Dataset 'catalog.csv' non trovato. Esegui lo script di setup!")
-    st.stop()
-Sidebar.init_sidebar(unfiltered_df)
-df, years, depth, magnitude = Sidebar.apply_filters(unfiltered_df)
 
 
 st.markdown("### Z-Score delle Magnitudo")

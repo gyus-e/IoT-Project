@@ -4,10 +4,18 @@ import plotly.graph_objects as go
 import pandas as pd
 import numpy as np
 
-from utils.load_data import df as unfiltered_df
 from utils.sidebar import Sidebar
+from utils.load_data import load_data
 # from utils.max_event import get_max_event
 # from utils.ai_assistant import render_ai_sidebar
+
+
+unfiltered_df = load_data()
+if unfiltered_df is None:
+    st.error("Dataset 'catalog.csv' non trovato. Esegui lo script di setup!")
+    st.stop()
+Sidebar.init_sidebar(unfiltered_df)
+df, years, depth, magnitude = Sidebar.apply_filters(unfiltered_df)
 
 
 st.set_page_config(
@@ -17,14 +25,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-
-if unfiltered_df is None:
-    st.error("Dataset 'catalog.csv' non trovato. Esegui lo script di setup!")
-    st.stop()
-Sidebar.init_sidebar(unfiltered_df)
-df, years, depth, magnitude = Sidebar.apply_filters(unfiltered_df)
    
-
 st.markdown("### Timeline")
 # Time distribution
 df['year_month'] = df['time'].dt.to_period('M').astype(str)

@@ -1,41 +1,13 @@
 import streamlit as st
 import plotly.express as px
 
-from utils.load_data import df as unfiltered_df
 from utils.sidebar import Sidebar
+from utils.load_data import load_data
 from utils.max_event import get_max_event
 # from utils.ai_assistant import render_ai_sidebar
 
 
-st.set_page_config(
-    # page_title="Home",
-    # page_icon="🌋",
-    layout="wide",
-    initial_sidebar_state="expanded",
-)
-
-
-# Custom CSS
-st.markdown("""
-<style>
-    .stApp {
-        background-color: #0e1117;
-        color: #fafafa;
-    }
-    .metric-card {
-        background-color: #262730;
-        padding: 20px;
-        border-radius: 10px;
-        border: 1px solid #4a4a4a;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-    }
-    h1, h2, h3 {
-        color: #ff4b4b; /* Streamlit Red/Orange */
-    }
-</style>
-""", unsafe_allow_html=True)
-
-
+unfiltered_df = load_data()
 if unfiltered_df is None:
     st.error("Dataset 'catalog.csv' non trovato. Esegui lo script di setup!")
     st.stop()
@@ -43,10 +15,42 @@ Sidebar.init_sidebar(unfiltered_df)
 df, years, depth, magnitude = Sidebar.apply_filters(unfiltered_df)
 
 
+st.set_page_config(
+    # page_title="Home",
+    # page_icon="🌋",
+    layout="wide",
+    initial_sidebar_state="expanded",
+    menu_items={
+        'About': "## Earthquake Analysis Dashboard\nThis dashboard provides insights into seismic activity using interactive visualizations and statistics.",
+    }
+)
+
+
+# Custom CSS
+# st.markdown("""
+# <style>
+#     .stApp {
+#         background-color: #0e1117;
+#         color: #fafafa;
+#     }
+#     .metric-card {
+#         background-color: #262730;
+#         padding: 20px;
+#         border-radius: 10px;
+#         border: 1px solid #4a4a4a;
+#         box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+#     }
+#     h1, h2, h3 {
+#         color: #ff4b4b; /* Streamlit Red/Orange */
+#     }
+# </style>
+# """, unsafe_allow_html=True)
+
+
 col1, col2 = st.columns([3, 1])
 
 with col1:
-    st.markdown("### Mappa degli Eventi Sismici")
+    # st.markdown("### Mappa degli Eventi Sismici")
     df["name"] = df["time"].dt.strftime("Evento %Y-%m-%d %H:%M:%S")
     fig_map = px.scatter_map(
         df,
@@ -69,8 +73,8 @@ with col1:
         # Map settings
         zoom=5,
         center={"lat": 42.0, "lon": 12.5},
-        map_style="carto-darkmatter",
-        # title=f"Eventi Sismici ({len(filtered_df)} totali)",
+        map_style="open-street-map",
+        title="Mappa degli Eventi Sismici",
         height=800,
     )
     st.plotly_chart(fig_map, width="stretch")
