@@ -1,5 +1,6 @@
 import streamlit as st
 from google import genai
+import streamlit.components.v1 as components
 import os
 from dotenv import load_dotenv
 
@@ -75,10 +76,58 @@ def render_chat_content(context_text):
         
         # Display spinner inside the chat container
         with chat_container:
+            # Ensure we import time if not already available in this scope
+            import time
+            
+            # 1. Scroll to BOTTOM to show "Sto pensando..." (Inject JS *outside* the message bubble to avoid empty space)
+            ts_start = int(time.time() * 1000)
+            js_scroll_bottom = f"""
+            <script>
+                setTimeout(function() {{
+                    var messages = window.parent.document.querySelectorAll('[data-testid="stChatMessage"]');
+                    if (messages.length > 0) {{
+                        var lastMessage = messages[messages.length - 1];
+                        lastMessage.scrollIntoView({{block: 'end', behavior: 'smooth'}});
+                    }}
+                }}, 100);
+            </script>
+            <div style="display:none;">{ts_start}_start</div>
+            """
+            components.html(js_scroll_bottom, height=0, width=0)
+
             with st.chat_message("assistant"):
                 with st.spinner("Sto pensando..."):
                     ai_reply = get_ai_response(last_user_msg, context_text)
                 st.markdown(ai_reply) # Render immediately!
+        
+        # Scroll to the top of the new message
+        # We target the last stChatMessage element and scroll it to the TOP (block='start')
+        # We add a longer delay (1sec) and a retry mechanism to fight against Streamlit's auto-scroll
+        import time
+        unique_id = int(time.time() * 1000)
+        js_scroll = f"""
+        <script>
+            function scrollToTop() {{
+                try {{
+                    var messages = window.parent.document.querySelectorAll('[data-testid="stChatMessage"]');
+                    if (messages.length > 0) {{
+                        var lastMessage = messages[messages.length - 1];
+                        lastMessage.scrollIntoView({{block: 'start', behavior: 'smooth'}});
+                    }}
+                }} catch(e) {{
+                    console.log("Scroll error:", e);
+                }}
+            }}
+
+            // Attempt 1: 1000ms
+            setTimeout(scrollToTop, 1000);
+            
+            // Attempt 2: 1500ms (just in case)
+            setTimeout(scrollToTop, 1500);
+        </script>
+        <div style="display:none;">{unique_id}</div>
+        """
+        components.html(js_scroll, height=0, width=0)
         
         # Add AI Message to history for next run
         st.session_state.messages.append({"role": "assistant", "content": ai_reply})
