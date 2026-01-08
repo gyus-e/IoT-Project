@@ -6,6 +6,8 @@ import plotly.express as px
 from scipy.signal import spectrogram
 import os
 
+from utils.ai_assistant import render_ai_assistant
+
 st.set_page_config(page_title="Signal Lab", page_icon="🔬", layout="wide")
 
 st.markdown("# 🔬 Laboratorio Analisi Segnali")
@@ -103,21 +105,8 @@ with col2:
     if "Napoli" in scenario:
         st.caption("Nota il picco intorno a **2-3 Hz**: è il ritmo dei salti dei tifosi ('Chi non salta...')!")
 
-from utils.ai_assistant import render_ai_assistant
 
-# Dynamic Context
-status_msg = "ALLARME SISMICO" if max_z > 5 and "Terremoto" in scenario else "VIBRAZIONE ANTROPICA" if max_z > 5 else "NORMALE"
-
-context = f"""
-Stai analizzando la pagina Segnali in Tempo Reale.
-SCENARIO ATTIVO: {scenario}
-
-DATI RILEVATI ORA:
-- Max Z-Score (Anomalia): {max_z:.2f}
-- Soglia di allarme: 5.0
-- Stato Attuale: {status_msg}
-- Frequenze dominanti visibili nello spettro.
-
-Spiega all'utente perché, basandosi su questi numeri, si tratta di un terremoto o di un evento artificiale (stadio).
+#TODO: aggiornare il contesto
+context=f"""
 """
 render_ai_assistant(context_text=context)
