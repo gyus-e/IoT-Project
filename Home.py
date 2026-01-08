@@ -78,6 +78,7 @@ def render_map_with_interaction(df):
         title="Mappa degli Eventi Sismici",
         height=800,
     )
+    fig_map.update_traces(unselected=dict(marker=dict(opacity=0.7))) # do not blur unselected markers, keep default opacity
     event = st.plotly_chart(fig_map, width="stretch", on_select="rerun", selection_mode="points")
 
     if event and event.selection and event.selection.points:
