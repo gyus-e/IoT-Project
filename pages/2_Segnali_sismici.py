@@ -5,9 +5,27 @@ import numpy as np
 import plotly.graph_objects as go
 import plotly.express as px
 from obspy import UTCDateTime
+from streamlit_autorefresh import st_autorefresh
 
 from utils.fetch_waveform import fetch_waveform
 from utils.ai_assistant import render_ai_assistant
+
+autorefresh_time = 2  # seconds
+
+if "autorefresh_on" not in st.session_state:
+    st.session_state.autorefresh_on = True
+
+if st.session_state.autorefresh_on:
+    btn_label = "⏸️ Stop Autorefresh"
+else:
+    btn_label = "▶️ Play Autorefresh"
+
+if st.button(btn_label):
+    st.session_state.autorefresh_on = not st.session_state.autorefresh_on
+
+if st.session_state.autorefresh_on:
+    st_autorefresh(interval=autorefresh_time * 1000, key="seg_sismici_refresh")
+
 
 st.set_page_config(
     # page_title="Signal Lab", 
@@ -40,14 +58,22 @@ stations_channels = {
 
 stations_colors = {
     "OVO": "orange",
-    "CSFT": "blue",
+    "CSFT": "red",
     "IOCA": "green",
     "SORR": "purple",
 }
 
-starttime = UTCDateTime(UTCDateTime.now() - 600)
-
 tab_ovo, tab_csft, tab_ioca, tab_sorr = st.tabs(stations)
+
+
+@st.cache_data(ttl=60)
+def fft_analysis(df: pd.DataFrame):
+    fft_vals = np.fft.rfft(df['velocity'])
+    fft_freq = np.fft.rfftfreq(len(df['velocity']), d=1/100) # assuming 100Hz        
+    fft_df = pd.DataFrame({'Freq (Hz)': fft_freq, 'Power': np.abs(fft_vals)})
+    fft_df = fft_df[fft_df['Freq (Hz)'] < 20]
+    return fft_df
+
 
 def load_tab(station: str, starttime: UTCDateTime, duration=300, debounce_time=2):
     df = fetch_waveform(
@@ -64,6 +90,7 @@ def load_tab(station: str, starttime: UTCDateTime, duration=300, debounce_time=2
             return
         load_tab(station, starttime, duration, debounce_time) # Retry recursively
         return
+    
 
     st.markdown (f"## Stazione: {stations_names[station]} ({station})")
 
@@ -77,12 +104,7 @@ def load_tab(station: str, starttime: UTCDateTime, duration=300, debounce_time=2
         st.plotly_chart(fig, width='stretch', height=300)
 
         st.markdown("#### Dominio delle frequenze")
-        # Simple FFT of the whole signal
-        fft_vals = np.fft.rfft(df['velocity'])
-        fft_freq = np.fft.rfftfreq(len(df['velocity']), d=1/100) # assuming 100Hz        
-        fft_df = pd.DataFrame({'Freq (Hz)': fft_freq, 'Power': np.abs(fft_vals)})
-        # Filter useful range 0-20Hz
-        fft_df = fft_df[fft_df['Freq (Hz)'] < 20]
+        fft_df = fft_analysis(df)
         fig_fft = px.line(fft_df, x='Freq (Hz)', y='Power')
         st.plotly_chart(fig_fft, width='stretch', height=300)
 
@@ -99,9 +121,11 @@ def load_tab(station: str, starttime: UTCDateTime, duration=300, debounce_time=2
         if max_z > 5:
             st.error("🚨 ALLARME SISMICO ATTIVATO")
             st.write("Trigger immediato (< 2s)")
-            st.warning("⚠️ RILEVATA VIBRAZIONE ANTROPICA")
-            st.write("Trigger lento (> 10s) o Frequenza anomala")
+            # st.warning("⚠️ RILEVATA VIBRAZIONE ANTROPICA")
+            # st.write("Trigger lento (> 10s) o Frequenza anomala")
 
+
+starttime = UTCDateTime(UTCDateTime.now() - 600)
 
 with tab_ovo:
     station = stations[0]
