@@ -9,7 +9,7 @@ def fetch_waveform(station: str, starttime: UTCDateTime, duration: int = 180, ne
         st = client.get_waveforms(network, station, location, channel, starttime, starttime + duration)
         tr = st[0]
         df = pd.DataFrame({
-            "times": tr.times(),
+            "times": pd.to_datetime(tr.times("timestamp"), unit="s"),
             "velocity": tr.data
         })
         return df

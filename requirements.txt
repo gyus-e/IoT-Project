@@ -7,4 +7,3 @@ plotly
 google-genai
 python-dotenv
 watchdog
-streamlit-autorefresh
