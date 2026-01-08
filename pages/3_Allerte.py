@@ -5,6 +5,7 @@ import numpy as np
 from utils.sidebar import Sidebar
 from utils.load_data import load_data
 from utils.ai_assistant import render_ai_assistant
+from utils.seismology import calculate_gutenberg_richter
 
 
 unfiltered_df = load_data()
@@ -32,33 +33,18 @@ if df.empty:
     st.warning("Nessun dato selezionato per l'analisi statistica.")
 else:
     # 2. Stima Parametri G-R su dati FILTRATI
+
+    gr_params = calculate_gutenberg_richter(df)
+    mc = gr_params['mc']
+    b_value = gr_params['b_value']
+    a_value = gr_params['a_value']
+    n_total = gr_params['n_total']
     
-    # Magnitudo di Completezza (Mc) - Stima basata sulla Moda dei dati VISIBILI
-    mags_rounded = df['magnitude'].round(1)
-    if not mags_rounded.empty:
-        mc = mags_rounded.mode().min() 
-    else:
-        mc = 0.0
+    # Se mc torna NaN (es. dataframe vuoto ma non intercettato prima), fallback a 0.0 per display
+    if np.isnan(mc): mc = 0.0
 
-    # Filtriamo dataset sopra Mc per il calcolo del b-value
-    # Nota: se l'utente ha già filtrato M > X, Mc sarà sempre >= X
-    df_above_mc = df[df['magnitude'] >= mc]
-
-    if len(df_above_mc) < 10:
-        st.warning(f"Troppi pochi eventi ({len(df_above_mc)}) nel range selezionato per calcolare un b-value affidabile.")
-        b_value = np.nan
-        a_value = np.nan
-    else:
-        # Metodo di Massima Verosimiglianza (Aki, 1965)
-        mean_mag = df_above_mc['magnitude'].mean()
-        if mean_mag == mc:
-            b_value = 1.0 
-        else:
-            b_value = 0.4343 / (mean_mag - mc)
-
-        # a-value
-        n_total = len(df_above_mc)
-        a_value = np.log10(n_total) + (b_value * mc)
+    if not gr_params['valid']:
+        st.warning(f"Troppi pochi eventi ({n_total}) nel range selezionato (>= Mc={mc}) per calcolare un b-value affidabile.")
 
     # Meteiche UI
     c1, c2, c3 = st.columns(3)

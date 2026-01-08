@@ -8,6 +8,7 @@ from utils.sidebar import Sidebar
 from utils.load_data import load_data
 from utils.max_event import get_max_event
 from utils.ai_assistant import render_ai_assistant
+from utils.seismology import calculate_gutenberg_richter
 
 
 unfiltered_df = load_data()
@@ -39,26 +40,41 @@ mag_counts = magnitudes.value_counts().sort_index(ascending=False)
 cdf = mag_counts.cumsum().sort_index() # Cumulative Number of events >= M
 gr_df = pd.DataFrame({'Magnitude': cdf.index, 'Count': cdf.values})
 gr_df['LogCount'] = np.log10(gr_df['Count'])
-# Linear Fit (approximate for visual)
-# Filter for linear part (usually 2.5 < M < 5.0 for completeness)
-fit_df = gr_df[(gr_df['Magnitude'] >= 2.5) & (gr_df['Magnitude'] <= 5.0)]
-if not fit_df.empty:
-    coeffs = np.polyfit(fit_df['Magnitude'], fit_df['LogCount'], 1)
-    b_value = -coeffs[0]
-    a_value = coeffs[1]
+
+# Calcolo parametri G-R usando la utility condivisa (MLE)
+gr_params = calculate_gutenberg_richter(df)
+a_value = gr_params['a_value']
+b_value = gr_params['b_value']
+mc = gr_params['mc']
+valid = gr_params['valid']
+
+if valid:
     fig_gr = px.scatter(gr_df, x="Magnitude", y="LogCount")
+    
     # Add fit line
-    x_range = np.linspace(2.0, 10.5, 100)
+    # Tracciamo la retta su un range esteso per visualizzazione
+    x_range = np.linspace(min(gr_df['Magnitude'].min(), mc), max(gr_df['Magnitude'].max(), 8.0), 100)
     y_fit = a_value - b_value * x_range
-    fig_gr.add_trace(go.Scatter(x=x_range, y=y_fit, mode='lines', name=f'Fit (b={b_value:.2f})', line=dict(color='red', dash='dash')))
+    
+    fig_gr.add_trace(go.Scatter(x=x_range, y=y_fit, mode='lines', 
+                                name=f'G-R Fit (b={b_value:.2f})', 
+                                line=dict(color='red', dash='dash')))
+    
+    # Mostriamo Mc
+    fig_gr.add_vline(x=mc, line_width=1, line_dash="dot", line_color="green", annotation_text=f"Mc={mc}")
+
     st.plotly_chart(fig_gr, width="stretch")
-    st.info(f"a = {a_value:.2f} è una misura della sismicità complessiva della regione.")
+    
+    st.info(f"a = {a_value:.2f} (Sismicità regionale). Calcolato con MLE su Mc >= {mc}")
+    
     if 0.8 <= b_value <= 1.2:
-        st.info(f"b = ({b_value:.2f}) è coerente con la sismicità tettonica standard (~1.0).")
+        st.info(f"b = {b_value:.2f} è coerente con la sismicità tettonica standard (~1.0).")
     elif b_value < 0.8:
-        st.warning(f"⚠️ b = ({b_value:.2f}). Potenziale alto stress sismico.")
+        st.warning(f"⚠️ b = {b_value:.2f}. Potenziale alto stress sismico.")
     else:
-        st.warning(f"⚠️ b = ({b_value:.2f}). Potenziale sciame sismico a bassa magnitudo.")
+        st.warning(f"⚠️ b = {b_value:.2f}. Potenziale sciame sismico a bassa magnitudo.")
+else:
+    st.warning("Dati insufficienti per calcolare la distribuzione Gutenberg-Richter (serve più eventi sopra Mc).")
 
    
 st.markdown("### Timeline")
