@@ -5,6 +5,7 @@ from utils.sidebar import Sidebar
 from utils.load_data import load_data
 from utils.max_event import get_max_event
 from utils.ai_assistant import render_ai_assistant
+from utils.fetch_waveform import fetch_waveform, get_nearby_stations
 
 
 unfiltered_df = load_data()
@@ -47,9 +48,9 @@ st.set_page_config(
 # """, unsafe_allow_html=True)
 
 
-col1, col2 = st.columns([3, 1])
 
-with col1:
+@st.fragment
+def render_map_with_interaction(df):
     # st.markdown("### Mappa degli Eventi Sismici")
     df["name"] = df["time"].dt.strftime("Evento %Y-%m-%d %H:%M:%S")
     fig_map = px.scatter_map(
@@ -77,7 +78,60 @@ with col1:
         title="Mappa degli Eventi Sismici",
         height=800,
     )
-    st.plotly_chart(fig_map, width="stretch")
+    event = st.plotly_chart(fig_map, width="stretch", on_select="rerun", selection_mode="points")
+
+    if event and event.selection and event.selection.points:
+        # Recupera l'indice del punto selezionato
+        point = event.selection.points[0]
+        # Handle both object and dict access just in case, but error said dict
+        point_idx = point["point_index"] if isinstance(point, dict) else point.point_index
+        # Validazione dell'indice
+        if point_idx < len(df):
+            selected_event = df.iloc[point_idx]
+            
+            st.markdown("---")
+            st.markdown(f"### Analisi Sismica: Evento del {selected_event['time']}")
+            
+            col_wave_info, col_wave_plot = st.columns([1, 3])
+            
+            
+            col_wave_info, col_wave_plot = st.columns([1, 3])
+            
+            with col_wave_info:
+                st.info("Ricerca stazioni vicine...")
+                stations = get_nearby_stations(selected_event['latitude'], selected_event['longitude'], selected_event['time'])
+                
+                if not stations:
+                    st.warning("Nessuna stazione trovata (raggio 1.0°).")
+                else:
+                    st.write(f"Stazioni trovate: {', '.join(stations)}")
+            
+            wave_df = None
+            found_station = None
+            
+            if stations:
+                with col_wave_plot:
+                    with st.spinner(f"Ricerca dati waveform..."):
+                        for station in stations:
+                            wave_df = fetch_waveform(station, selected_event['time'])
+                            if wave_df is not None:
+                                found_station = station
+                                break
+                    
+                    if wave_df is not None:
+                        st.success(f"Dati recuperati da stazione: **{found_station}**")
+                        fig_wave = px.line(wave_df, x="times", y="velocity", 
+                                         title=f"Forma d'onda stazione {found_station}",
+                                         labels={"times": "Tempo", "velocity": "Velocità"})
+                        fig_wave.update_layout(height=400)
+                        st.plotly_chart(fig_wave, key="wave_chart", on_select="ignore", selection_mode="points")
+                    else:
+                        st.error(f"Nessun dato waveform disponibile per le stazioni: {', '.join(stations)}")
+
+col1, col2 = st.columns([3, 1])
+
+with col1:
+    render_map_with_interaction(df)
 
 with col2:
     st.markdown("### Statistiche")
@@ -108,3 +162,4 @@ with col2:
 context=f"""
 """
 render_ai_assistant(context_text=context)
+
