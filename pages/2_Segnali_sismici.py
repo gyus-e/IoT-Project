@@ -45,11 +45,11 @@ stations_colors = {
     "SORR": "purple",
 }
 
-starttime = UTCDateTime(UTCDateTime.now() - 180)
+starttime = UTCDateTime(UTCDateTime.now() - 600)
 
 tab_ovo, tab_csft, tab_ioca, tab_sorr = st.tabs(stations)
 
-def load_tab(station: str, starttime: UTCDateTime, duration=120, debounce_time=2):
+def load_tab(station: str, starttime: UTCDateTime, duration=300, debounce_time=2):
     df = fetch_waveform(
         station=station, 
         starttime=starttime,
