@@ -25,15 +25,6 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-   
-st.markdown("### Timeline")
-# Time distribution
-df['year_month'] = df['time'].dt.to_period('M').astype(str)
-counts = df.groupby('year_month').size().reset_index(name='counts')
-fig_hist = px.bar(counts, x='year_month', y='counts', title="Eventi per Mese", labels={"year_month": "Mese", "counts": "Numero di Eventi"})
-fig_hist.update_xaxes(showticklabels=True)
-st.plotly_chart(fig_hist, width="stretch")
-
 
 st.markdown("### Distribuzione delle Magnitudo")
 st.markdown("Segue la Legge di Gutenberg-Richter:")
@@ -69,9 +60,17 @@ if not fit_df.empty:
     else:
         st.warning(f"⚠️ b = ({b_value:.2f}). Potenziale sciame sismico a bassa magnitudo.")
 
+   
+st.markdown("### Timeline")
+# Time distribution
+df['year_month'] = df['time'].dt.to_period('M').astype(str)
+counts = df.groupby('year_month').size().reset_index(name='counts')
+fig_hist = px.bar(counts, x='year_month', y='counts', title="Eventi per Mese", labels={"year_month": "Mese", "counts": "Numero di Eventi"})
+fig_hist.update_xaxes(showticklabels=True)
+st.plotly_chart(fig_hist, width="stretch")
 
-st.markdown("### Distribuzione Tempi di Attesa")
-st.markdown("Segue un processo di Poisson. Gli eventi sono indipendenti dal tempo.")
+
+st.markdown("### Istogramma dei tempi di Attesa")
 # Calculate Inter-event times
 df_sorted = df.sort_values("time")
 df_sorted['delta_time'] = df_sorted['time'].diff().dt.total_seconds() / 3600.0 # hours
