@@ -106,7 +106,7 @@ with tab2:
         st.error(f"Rilevati {len(anomalies)} eventi sopra la soglia Z={z_thresh}!")
         st.dataframe(anomalies[['time', 'magnitude', 'depth', 'z_score']].sort_values('z_score', ascending=False).head(10))
 
-from utils.ai_assistant import render_ai_sidebar
+from utils.ai_assistant import render_ai_assistant
 
 # Dynamic Context
 context = f"""
@@ -126,4 +126,4 @@ Stai analizzando la pagina Statistica Avanzata (Fisica Sismica).
    
 Spiega all'utente quale pattern emerge dai dati.
 """
-render_ai_sidebar(context_text=context)
+render_ai_assistant(context_text=context)

@@ -71,8 +71,8 @@ st.divider()
 st.info("👈 Seleziona una pagina dalla barra laterale per iniziare l'analisi.")
 
 # Sidebar info
-from utils.ai_assistant import render_ai_sidebar
-render_ai_sidebar(context_text="Home Page. Overview of the project.")
+from utils.ai_assistant import render_ai_assistant
+render_ai_assistant(context_text="Home Page. Overview of the project.")
 
 with st.sidebar:
     st.write("---")

@@ -93,7 +93,7 @@ with col2:
         max_event = None
         st.info("Nessun evento trovato con i filtri attuali.")
 
-from utils.ai_assistant import render_ai_sidebar
+from utils.ai_assistant import render_ai_assistant
 
 # Dynamic Context for AI
 active_filters_string = f"""
@@ -126,4 +126,4 @@ NUOVI GRAFICI (PATTERN RECOGNITION):
   Se vedi diagonali di punti, significa che i terremoti si spostano lungo una faglia.
   Spiega all'utente se la distribuzione appare casuale (nuvole sparse) o se ci sono linee di tendenza (migrazione).
 """
-render_ai_sidebar(context_text=context)
+render_ai_assistant(context_text=context)
