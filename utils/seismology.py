@@ -1,6 +1,8 @@
 import numpy as np
 import pandas as pd
+import streamlit as st
 
+@st.cache_data
 def calculate_gutenberg_richter(df: pd.DataFrame, magnitude_col: str = 'magnitude', mc: float = None):
     """
     Calcola i parametri a e b della legge di Gutenberg-Richter usando il metodo MLE (Aki, 1965).
@@ -79,3 +81,30 @@ def calculate_gutenberg_richter(df: pd.DataFrame, magnitude_col: str = 'magnitud
         'n_total': n_total,
         'valid': valid
     }
+
+@st.cache_data
+def fft_analysis(df: pd.DataFrame, sampling_rate: float = 100.0) -> pd.DataFrame:
+    """
+    Computes the Fast Fourier Transform (FFT) of the velocity signal.
+    
+    Args:
+        df: DataFrame containing 'velocity' column.
+        sampling_rate: Sampling rate in Hz (default 100.0).
+        
+    Returns:
+        DataFrame with 'Freq (Hz)' and 'Power' columns.
+    """
+    if df.empty or 'velocity' not in df.columns:
+        return pd.DataFrame()
+        
+    # Remove DC component (detrending constant)
+    velocity = df['velocity'] - df['velocity'].mean()
+    
+    fft_vals = np.fft.rfft(velocity)
+    fft_freq = np.fft.rfftfreq(len(velocity), d=1/sampling_rate)
+    
+    fft_df = pd.DataFrame({'Freq (Hz)': fft_freq, 'Power': np.abs(fft_vals)})
+    # Limit to relevant frequencies (e.g., < 20Hz for seismic signals often sufficient for visualization)
+    fft_df = fft_df[fft_df['Freq (Hz)'] < 20]
+    
+    return fft_df

@@ -10,6 +10,7 @@ from utils.fetch_waveform import fetch_waveform
 from utils.ai_assistant import render_ai_assistant
 from utils.fetch_waveform import fetch_waveform
 from utils.ai_assistant import render_ai_assistant
+from utils.seismology import fft_analysis
 
 st.set_page_config(
     # page_title="Signal Lab", 
@@ -53,15 +54,6 @@ stations_colors = {
 if "waveforms" not in st.session_state:
     st.session_state.waveforms = {}
 
-@st.cache_data(ttl=60)
-def fft_analysis(df: pd.DataFrame):
-    if df.empty:
-        return pd.DataFrame()
-    fft_vals = np.fft.rfft(df['velocity'])
-    fft_freq = np.fft.rfftfreq(len(df['velocity']), d=1/100) # assuming 100Hz        
-    fft_df = pd.DataFrame({'Freq (Hz)': fft_freq, 'Power': np.abs(fft_vals)})
-    fft_df = fft_df[fft_df['Freq (Hz)'] < 20]
-    return fft_df
 
 
 def update_buffer(station, target_end_time, window_duration=300):

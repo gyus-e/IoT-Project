@@ -6,6 +6,7 @@ from utils.load_data import load_data
 from utils.max_event import get_max_event
 from utils.ai_assistant import render_ai_assistant
 from utils.fetch_waveform import fetch_waveform, get_nearby_stations
+from utils.seismology import fft_analysis
 
 
 unfiltered_df = load_data()
@@ -99,12 +100,15 @@ def render_map_with_interaction(df):
             col_wave_info, col_wave_plot = st.columns([1, 3])
             
             with col_wave_info:
-                st.info("Ricerca stazioni vicine...")
+                status_placeholder = st.empty()
+                status_placeholder.info("Ricerca stazioni vicine...")
+                
                 stations = get_nearby_stations(selected_event['latitude'], selected_event['longitude'], selected_event['time'])
                 
                 if not stations:
-                    st.warning("Nessuna stazione trovata (raggio 1.0°).")
+                    status_placeholder.warning("Nessuna stazione trovata (raggio 1.0°).")
                 else:
+                    status_placeholder.empty() # Clear the info message
                     st.write(f"Stazioni trovate: {', '.join(stations)}")
             
             wave_df = None
@@ -121,11 +125,27 @@ def render_map_with_interaction(df):
                     
                     if wave_df is not None:
                         st.success(f"Dati recuperati da stazione: **{found_station}**")
-                        fig_wave = px.line(wave_df, x="times", y="velocity", 
-                                         title=f"Forma d'onda stazione {found_station}",
-                                         labels={"times": "Tempo", "velocity": "Velocità"})
-                        fig_wave.update_layout(height=400)
-                        st.plotly_chart(fig_wave, key="wave_chart", on_select="ignore", selection_mode="points")
+                        
+                        # Create two columns for Time Domain and Frequency Domain
+                        col_time, col_freq = st.columns(2)
+                        
+                        with col_time:
+                            st.markdown("**Dominio del tempo**")
+                            fig_wave = px.line(wave_df, x="times", y="velocity", 
+                                             labels={"times": "Tempo", "velocity": "Velocità"})
+                            fig_wave.update_layout(height=300, margin=dict(l=0, r=0, t=30, b=0))
+                            st.plotly_chart(fig_wave, key="wave_chart_time", width="stretch", on_select="ignore", selection_mode="points")
+                            
+                        with col_freq:
+                            st.markdown("**Dominio delle frequenze**")
+                            fft_df = fft_analysis(wave_df)
+                            if not fft_df.empty:
+                                fig_fft = px.line(fft_df, x='Freq (Hz)', y='Power',
+                                                labels={'Freq (Hz)': 'Freq (Hz)', 'Power': 'Power'})
+                                fig_fft.update_layout(height=300, margin=dict(l=0, r=0, t=30, b=0))
+                                st.plotly_chart(fig_fft, key="wave_chart_freq", width="stretch")
+                            else:
+                                st.caption("Analisi in frequenza non disponibile.")
                     else:
                         st.error(f"Nessun dato waveform disponibile per le stazioni: {', '.join(stations)}")
 
