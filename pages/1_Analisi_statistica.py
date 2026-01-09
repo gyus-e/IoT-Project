@@ -6,7 +6,6 @@ import numpy as np
 
 from utils.sidebar import Sidebar
 from utils.load_data import load_data
-from utils.max_event import get_max_event
 from utils.ai_assistant import render_ai_assistant
 from utils.seismology import calculate_gutenberg_richter
 

@@ -1,4 +1,4 @@
-import time
+import os
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -6,6 +6,8 @@ import plotly.graph_objects as go
 import plotly.express as px
 from obspy import UTCDateTime
 
+from utils.fetch_waveform import fetch_waveform
+from utils.ai_assistant import render_ai_assistant
 from utils.fetch_waveform import fetch_waveform
 from utils.ai_assistant import render_ai_assistant
 
@@ -136,13 +138,12 @@ def render_tab(station):
         fft_df = fft_analysis(df)
         if not fft_df.empty:
             fig_fft = px.line(fft_df, x='Freq (Hz)', y='Power')
+            fig_fft.update_traces(line_color=stations_colors[station])
             st.plotly_chart(fig_fft, width='stretch', height=300)
 
     with col2:
         # Calculate simple Z-Score on a rolling window
         window_size = 100 # 1 second if 100Hz
-        # Rolling on dataframe with datetime index or just column? 
-        # Rolling works on index or if generic, on rows. 
         # We assume regular sampling approx.
         df['rolling_mean'] = df['velocity'].rolling(window_size).mean()
         df['rolling_std'] = df['velocity'].rolling(window_size).std()        
@@ -189,7 +190,80 @@ def render_realtime_dashboard():
 render_realtime_dashboard()
 
 
+# --- Comparison Section ---
 
+st.markdown("---")
+st.markdown("## 📊 Confronto Eventi: Naturale vs Antropico")
+
+event_tabs = st.tabs(["🟢 Evento Naturale (Terremoto Campania)", "🔵 Evento Antropico (Festa Scudetto)"])
+
+# Load comparison data
+@st.cache_data
+def load_comparison_data():
+    data_dir = os.path.join(os.path.dirname(__file__), '..', 'data')
+    quake = pd.read_csv(os.path.join(data_dir, 'waveform_max_event_flegrei.csv')) if os.path.exists(os.path.join(data_dir, 'waveform_max_event_flegrei.csv')) else None
+    napoli = pd.read_csv(os.path.join(data_dir, 'waveform_napoli_scudetto.csv')) if os.path.exists(os.path.join(data_dir, 'waveform_napoli_scudetto.csv')) else None
+    return quake, napoli
+
+quake_df, napoli_df = load_comparison_data()
+
+def render_comparison_tab(df, title, color, description):
+    if df is None:
+        st.warning("⚠️ Dati non trovati. Esegui `scripts/fetch_data.py`.")
+        return
+
+    st.markdown(f"### {title}")
+    st.caption(description)
+    
+    # Time Domain
+    st.markdown("**Dominio del tempo**")
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=df['times'], y=df['velocity'], line=dict(color=color, width=1), name="Velocity"))
+    fig.update_layout(height=250, margin=dict(l=0, r=0, t=10, b=0), xaxis_title="Time", yaxis_title="Velocity (m/s)")
+    st.plotly_chart(fig, width='stretch', height=250)
+
+    # Frequency Domain
+    st.markdown("**Dominio delle frequenze**")
+    fft_df = fft_analysis(df)
+    if not fft_df.empty:
+        fig_fft = px.line(fft_df, x='Freq (Hz)', y='Power')
+        fig_fft.update_traces(line_color=color)
+        fig_fft.update_layout(height=250, margin=dict(l=0, r=0, t=10, b=0))
+        st.plotly_chart(fig_fft, width='stretch', height=250)
+
+
+# Get specific event info
+data_dir = os.path.join(os.path.dirname(__file__), '..', 'data')
+max_event_path = os.path.join(data_dir, "max_event_flegrei.csv")
+
+if os.path.exists(max_event_path):
+    max_e_df = pd.read_csv(max_event_path)
+    # It's a single row dataframe if saved via transpose
+    if not max_e_df.empty:
+        max_e = max_e_df.iloc[0]
+        date_str = pd.to_datetime(max_e['time']).strftime('%d/%m/%Y')
+        quake_title = f"Terremoto Campi Flegrei {date_str} (M{max_e['magnitude']})"
+    else:
+        quake_title = "Terremoto (Max Campi Flegrei)"
+else:
+    st.warning("⚠️ Dati non trovati. Esegui `scripts/fetch_data.py`.")
+    quake_title = "Terremoto (Max Campi Flegrei)"
+
+with event_tabs[0]:
+    render_comparison_tab(
+        quake_df, 
+        quake_title, 
+        "green", 
+        "Si nota l'arrivo impulsivo delle onde P e S. Il contenuto in frequenza è tipicamente broadband fino a 10-15Hz."
+    )
+
+with event_tabs[1]:
+    render_comparison_tab(
+        napoli_df, 
+        "Festa Scudetto Napoli (Stadio Maradona)", 
+        "blue", 
+        "Si nota un tracciato più caotico e continuo ('crescendo'). Nello spettro spesso emergono picchi a ~2-3Hz dovuti ai salti ritmici."
+    )
 
 
 #TODO: aggiornare il contesto

@@ -80,8 +80,98 @@ def fetch_catalog():
         output_path = os.path.join(DATA_DIR, "catalog.csv")
         df.to_csv(output_path, index=False)
         print(f"Total Catalog saved to {output_path} ({len(df)} events)")
+        
+        fetch_comparison_waveforms(df)
+        
     else:
         print("No data fetched.")
+
+def fetch_comparison_waveforms(catalog_df):
+    print("\n--- Fetching Comparison Waveforms ---")
+    
+    # 1. Find Max Quake in Campi Flegrei
+    flegrei_events = catalog_df[
+        (catalog_df['latitude'] >= 40.75) & (catalog_df['latitude'] <= 40.90) &
+        (catalog_df['longitude'] >= 13.90) & (catalog_df['longitude'] <= 14.25)
+    ]
+    
+    if flegrei_events.empty:
+        print("No events found in Campi Flegrei.")
+        return
+    
+    max_event = flegrei_events.loc[flegrei_events['magnitude'].idxmax()]
+    if max_event is None:
+        print("No events found in Campi Flegrei.")
+        return
+
+    print(f"Max Event in Campi Flegrei: {max_event['time']} M{max_event['magnitude']} at {max_event['latitude']}, {max_event['longitude']}")
+    max_event_flegrei_path = os.path.join(DATA_DIR, "max_event_flegrei.csv")
+    max_event_flegrei_df = pd.DataFrame(max_event).T
+    max_event_flegrei_df.to_csv(max_event_flegrei_path, index=False)
+
+    # 2. Download Quake Waveform
+    success = save_waveform(
+        filename=f"waveform_max_event_flegrei.csv", 
+        starttime=UTCDateTime(max_event['time']) - 60, # Start 1 min before
+        duration=300, # 5 mins
+        station="OVO", 
+        channel="HHZ"
+    )
+    if success:
+        print(f"Successfully downloaded waveform for max event in Campi Flegrei.")
+    else:
+        print(f"Failed to download waveform for max event in Campi Flegrei.")
+
+
+    # 2023-05-04 20:37:00 UTC (Approximate time of goal/final whistle celebration)
+    scudetto_time = UTCDateTime("2023-05-04T20:37:00")
+    success = save_waveform(
+        filename=f"waveform_napoli_scudetto.csv",
+        starttime=scudetto_time, 
+        duration=300, 
+        station="OVO", 
+        channel="HHZ"
+    )
+    if success:
+        print(f"Successfully downloaded waveform for Napoli Scudetto.")
+    else:
+        print(f"Failed to download waveform for Napoli Scudetto.")
+
+
+def save_waveform(filename, starttime, duration, station, channel):
+    print(f"Downloading {filename} from {station} starting {starttime}...")
+    try:
+        st = client.get_waveforms(
+            network="IV", 
+            station=station, 
+            location="*", 
+            channel=channel, 
+            starttime=starttime, 
+            endtime=starttime + duration
+        )
+        if len(st) > 0:
+            tr = st[0]
+            # Resample strictly to 100Hz to ensure consistent data
+            tr.resample(100.0)
+            
+            # Create DF
+            times = pd.to_datetime(tr.times("timestamp"), unit="s")
+            df_wave = pd.DataFrame({
+                "times": times,
+                "velocity": tr.data
+            })
+            
+            out_path = os.path.join(DATA_DIR, filename)
+            df_wave.to_csv(out_path, index=False)
+            print(f"Saved {filename} ({len(df_wave)} samples).")
+            return True
+        else:
+            print(f"No waveforms found for {filename} at {station}.")
+            return False
+            
+    except Exception as e:
+        print(f"Error fetching {filename} from {station}: {e}")
+        return False
 
 
 if __name__ == "__main__":
