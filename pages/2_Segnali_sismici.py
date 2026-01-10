@@ -114,19 +114,19 @@ def render_tab(station):
         st.warning("In attesa di dati...")
         return
 
-    st.markdown (f"## Stazione: {stations_names[station]} ({station})")
+    st.markdown (f"### Stazione: {stations_names[station]} ({station})")
 
     col1, col2 = st.columns([3, 1])
 
     with col1:
-        st.markdown("### Dominio del tempo")
+        st.markdown("**Dominio del tempo**")
         fig = go.Figure()
         # Ensure times are datetime for proper valid plotting
         fig.add_trace(go.Scatter(x=df['times'], y=df['velocity'], line=dict(color=stations_colors[station], width=1), name="Velocity"))
         fig.update_layout(height=300, margin=dict(l=0, r=0, t=30, b=0), xaxis_title="Time", yaxis_title="Velocity (m/s)")
         st.plotly_chart(fig, width='stretch', height=300)
 
-        st.markdown("#### Dominio delle frequenze")
+        st.markdown("**Dominio delle frequenze**")
         fft_df = fft_analysis(df)
         if not fft_df.empty:
             fig_fft = px.line(fft_df, x='Freq (Hz)', y='Power')
@@ -179,8 +179,11 @@ def render_realtime_dashboard():
     with tab_sorr:
         render_tab(stations[3])
 
-render_realtime_dashboard()
 
+# --- Realtime Section ---
+
+st.markdown("## 📊 Segnali in tempo reale")
+render_realtime_dashboard()
 
 # --- Comparison Section ---
 
@@ -199,13 +202,12 @@ def load_comparison_data():
 
 quake_df, napoli_df = load_comparison_data()
 
-def render_comparison_tab(df, title, color, description):
+def render_comparison_tab(df, title, color):
     if df is None:
         st.warning("⚠️ Dati non trovati. Esegui `scripts/fetch_data.py`.")
         return
 
     st.markdown(f"### {title}")
-    st.caption(description)
     
     # Time Domain
     st.markdown("**Dominio del tempo**")
@@ -245,16 +247,14 @@ with event_tabs[0]:
     render_comparison_tab(
         quake_df, 
         quake_title, 
-        "green", 
-        "Si nota l'arrivo impulsivo delle onde P e S. Il contenuto in frequenza è tipicamente broadband fino a 10-15Hz."
+        "green"
     )
 
 with event_tabs[1]:
     render_comparison_tab(
         napoli_df, 
         "Festa Scudetto Napoli (Stadio Maradona)", 
-        "blue", 
-        "Si nota un tracciato più caotico e continuo ('crescendo'). Nello spettro spesso emergono picchi a ~2-3Hz dovuti ai salti ritmici."
+        "blue"
     )
 
 
