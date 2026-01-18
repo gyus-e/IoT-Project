@@ -108,7 +108,29 @@ fig_st = px.scatter(
 st.plotly_chart(fig_st, width="stretch")
 
 
-#TODO: aggiornare il contesto
-context=f"""
-"""
-render_ai_assistant(context_text=context)
+# --- AI Context Generation ---
+if df.empty:
+    stats_context = "Nessun dato disponibile per l'analisi."
+else:
+    stats_context = f"""
+    ANALISI STATISTICA (Gutenberg-Richter):
+    - Numero eventi totali: {len(df)}
+    - Magnitudo di Completezza (Mc): {mc}
+    - b-value: {b_value:.2f} (Valid: {valid})
+    - a-value: {a_value:.2f}
+    """
+    
+    if valid:
+        if 0.8 <= b_value <= 1.2:
+            stats_context += "\n    - Interpretazione b-value: Coerente con sismicità tettonica standard."
+        elif b_value < 0.8:
+            stats_context += "\n    - Interpretazione b-value: Potenziale alto stress sismico."
+        else:
+            stats_context += "\n    - Interpretazione b-value: Potenziale sciame sismico."
+    else:
+        stats_context += "\n    - NOTE: Parametri non affidabili (pochi dati sopra Mc)."
+
+st.session_state['ai_context_global'] = stats_context
+st.session_state['ai_context_selection'] = "" # Clear stale selection from other pages
+
+render_ai_assistant(context_text="Pagina di Analisi Statistica Avanzata (Legge G-R, Timeline, Tempi d'attesa).")

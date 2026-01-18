@@ -23,10 +23,20 @@ def get_ai_response(prompt, context_text):
         CONTESTO PAGINA ATTUALE:
         {context_text}
         
+        CONTESTO DINAMICO (Generale):
+        {st.session_state.get('ai_context_global', '')}
+        
+        CONTESTO SELEZIONE (Dettagli):
+        {st.session_state.get('ai_context_selection', '')}
+        
         DOMANDA UTENTE:
         {prompt}
         
-        Rispondi in modo conciso, scientifico ma semplice. Usa l'italiano.
+        ISTRUZIONI:
+        1. Rispondi in modo conciso, scientifico ma semplice.
+        2. Usa l'italiano.
+        3. IMPORTANTE: Basati ESCLUSIVAMENTE sui dati forniti nel contesto qui sopra.
+        4. NON inventare dati numerici, stazioni o eventi non presenti nel contesto. Se l'informazione non c'è, dì "Non ho questa informazione".
         """
         response = client.models.generate_content(
             model="gemini-flash-lite-latest", 

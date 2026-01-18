@@ -144,6 +144,14 @@ def render_tab(station):
         max_z = df['z_score_inst'].max()
         # avg_z = df['z_score_inst'].mean()
         st.metric("Max Z-Score (Allarme)", f"{max_z:.1f}", delta="CRITICAL" if max_z > 5 else "NORMAL")
+        
+        # Update status for AI Context
+        if 'realtime_status' not in st.session_state: st.session_state.realtime_status = {}
+        st.session_state.realtime_status[station] = {
+            "max_z": max_z,
+            "status": "ALLARME" if max_z > 5 else "Normale"
+        }
+
         if max_z > 5:
             st.error("🚨 ALLARME SISMICO ATTIVATO")
             st.write("Trigger immediato (< 2s)")
@@ -258,7 +266,21 @@ with event_tabs[1]:
     )
 
 
-#TODO: aggiornare il contesto
-context=f"""
+# --- AI Context Generation ---
+realtime_context = "MONITORAGGIO TEMPO REALE:\n"
+if 'realtime_status' in st.session_state:
+    for st_code, status in st.session_state.realtime_status.items():
+        realtime_context += f"- Stazione {st_code}: Z-Score={status['max_z']:.1f} ({status['status']})\n"
+else:
+    realtime_context += "In attesa di dati dalle stazioni...\n"
+
+comparison_context = f"""
+CONFRONTO EVENTI:
+1. {quake_title} (Naturale)
+2. Festa Scudetto Napoli (Antropico)
 """
-render_ai_assistant(context_text=context)
+
+st.session_state['ai_context_global'] = realtime_context + "\n" + comparison_context
+st.session_state['ai_context_selection'] = ""
+
+render_ai_assistant(context_text="Pagina Lab Segnali: Monitoraggio realtime e confronto firma sismica.")

@@ -110,7 +110,26 @@ else:
             st.info("Nessun evento supera la soglia di tempo di ritorno impostata.")
 
 
-#TODO: aggiornare il contesto
-context=f"""
-"""
-render_ai_assistant(context_text=context)
+# --- AI Context Generation ---
+if df.empty:
+    alerts_context = "Nessun dato."
+else:
+    alerts_context = f"""
+    ANALISI ANOMALIE (Tempo di Ritorno):
+    - Soglia Rarità impostata: {tr_thresh} anni
+    - b-value utilizzato: {b_value:.2f}
+    """
+    
+    if not anomalies.empty:
+        alerts_context += f"\n    - EVENTI ANOMALI RILEVATI ({len(anomalies)}):\n"
+        # List top 5 anomalies
+        top_anomalies = anomalies.sort_values('return_period_years', ascending=False).head(5)
+        for _, row in top_anomalies.iterrows():
+            alerts_context += f"      * Data: {row['time']}, Mag: {row['magnitude']}, TR: {row['return_period_years']:.1f} anni\n"
+    else:
+        alerts_context += "\n    - Nessuna anomalia rilevata con i filtri attuali."
+
+st.session_state['ai_context_global'] = alerts_context
+st.session_state['ai_context_selection'] = ""
+
+render_ai_assistant(context_text="Pagina Allerte: Analisi probabilistica del Tempo di Ritorno.")

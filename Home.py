@@ -148,6 +148,22 @@ def render_map_with_interaction(df):
                                 st.caption("Analisi in frequenza non disponibile.")
                     else:
                         st.error(f"Nessun dato waveform disponibile per le stazioni: {', '.join(stations)}")
+            
+            # Update Context for AI
+            st.session_state['ai_context_selection'] = f"""
+            EVENTO SELEZIONATO:
+            - Data/Ora: {selected_event['time']}
+            - Magnitudo: {selected_event['magnitude']}
+            - Profondità: {selected_event['depth']} km
+            - Località (Lat/Lon): {selected_event['latitude']}, {selected_event['longitude']}
+            - Stazione Dati: {found_station if found_station else 'Nessuna (Nessun dato waveform trovato)'}
+            - Dati Waveform: {'Disponibili' if wave_df is not None else 'Non disponibili'}
+            """
+        else:
+             st.session_state['ai_context_selection'] = "Nessun evento selezionato."
+    else:
+        st.session_state['ai_context_selection'] = "Nessun evento selezionato."
+
 
 col1, col2 = st.columns([3, 1])
 
@@ -179,8 +195,32 @@ with col2:
         max_event = None
         st.info("Nessun evento trovato con i filtri attuali.")
 
-#TODO: aggiornare il contesto
-context=f"""
-"""
-render_ai_assistant(context_text=context)
+# --- AI Context Generation ---
+if not df.empty:
+    stats_context = f"""
+    STATISTICHE DATASET FILTRATO:
+    - Numero eventi: {len(df)}
+    - Magnitudo Media: {df['magnitude'].mean():.2f}
+    - Magnitudo Max: {df['magnitude'].max()}
+    - Profondità Media: {df['depth'].mean():.2f} km
+    """
+    
+    max_event = get_max_event(df)
+    if max_event is not None:
+        stats_context += f"""
+        EVENTO MASSIMO:
+        - Data: {max_event['time']}
+        - Magnitudo: {max_event['magnitude']}
+        - Posizione: {max_event['latitude']}, {max_event['longitude']}
+        """
+else:
+    stats_context = "Nessun evento visibile con i filtri correnti."
+
+st.session_state['ai_context_global'] = stats_context
+
+# Initialize selection context if not present (to avoid errors on first run)
+if 'ai_context_selection' not in st.session_state:
+    st.session_state['ai_context_selection'] = "Nessun evento selezionato."
+
+render_ai_assistant(context_text="Analisi della Home Page con mappa interattiva.")
 
