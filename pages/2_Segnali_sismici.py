@@ -19,6 +19,22 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
+with st.sidebar:
+    st.markdown("### Impostazioni")
+    refresh_rate_options = {
+        "5 secondi": 5,
+        "30 secondi": 30,
+        "1 minuto": 60,
+        "2 minuti": 120,
+        "5 minuti": 300
+    }
+    selected_refresh_label = st.selectbox(
+        "Tempo di aggiornamento",
+        options=list(refresh_rate_options.keys()),
+        index=2 # Default to 1 minute
+    )
+    refresh_rate = refresh_rate_options[selected_refresh_label]
+
 # http://portale2.ov.ingv.it/segnali/OVO_HHZ_attuale.html
 stations = [
     "OVO",   # Osservatorio Vesuviano
@@ -157,7 +173,7 @@ def render_tab(station):
             st.write("Trigger immediato (< 2s)")
 
 
-@st.fragment(run_every=2)
+@st.fragment(run_every=refresh_rate)
 def render_realtime_dashboard():
     # Create tabs inside the fragment
     tab_ovo, tab_csft, tab_ioca, tab_sorr = st.tabs(stations)
