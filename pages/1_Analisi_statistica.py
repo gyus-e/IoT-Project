@@ -19,14 +19,15 @@ df, years, depth, magnitude = Sidebar.apply_filters(unfiltered_df)
 
 
 st.set_page_config(
-    # page_title="Macro Analysis", 
-    # page_icon="🌍", 
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
 
-st.markdown("### Distribuzione delle Magnitudo")
+
+st.title("Analisi statistica")
+
+st.header("Distribuzione delle magnitudo")
 st.markdown("Segue la Legge di Gutenberg-Richter:")
 help="""
 N è il numero cumulativo di eventi con magnitudo ≥ M \n
@@ -40,7 +41,7 @@ cdf = mag_counts.cumsum().sort_index() # Cumulative Number of events >= M
 gr_df = pd.DataFrame({'Magnitude': cdf.index, 'Count': cdf.values})
 gr_df['LogCount'] = np.log10(gr_df['Count'])
 
-# Calcolo parametri G-R usando la utility condivisa (MLE)
+# Calculate G-R parameters using shared utility (MLE)
 gr_params = calculate_gutenberg_richter(df)
 a_value = gr_params['a_value']
 b_value = gr_params['b_value']
@@ -51,7 +52,7 @@ if valid:
     fig_gr = px.scatter(gr_df, x="Magnitude", y="LogCount")
     
     # Add fit line
-    # Tracciamo la retta su un range esteso per visualizzazione
+    # Plot the line over an extended range for visualization
     x_range = np.linspace(min(gr_df['Magnitude'].min(), mc), max(gr_df['Magnitude'].max(), 8.0), 100)
     y_fit = a_value - b_value * x_range
     
@@ -59,7 +60,7 @@ if valid:
                                 name=f'G-R Fit (b={b_value:.2f})', 
                                 line=dict(color='red', dash='dash')))
     
-    # Mostriamo Mc
+    # Show Mc
     fig_gr.add_vline(x=mc, line_width=1, line_dash="dot", line_color="green", annotation_text=f"Mc={mc}")
 
     st.plotly_chart(fig_gr, width="stretch")
@@ -69,23 +70,23 @@ if valid:
     if 0.8 <= b_value <= 1.2:
         st.info(f"b = {b_value:.2f} è coerente con la sismicità tettonica standard (~1.0).")
     elif b_value < 0.8:
-        st.warning(f"⚠️ b = {b_value:.2f}. Potenziale alto stress sismico.")
+        st.warning(f"b = {b_value:.2f}. Potenziale alto stress sismico.")
     else:
-        st.warning(f"⚠️ b = {b_value:.2f}. Potenziale sciame sismico a bassa magnitudo.")
+        st.warning(f"b = {b_value:.2f}. Potenziale sciame sismico a bassa magnitudo.")
 else:
     st.warning("Dati insufficienti per calcolare la distribuzione Gutenberg-Richter (serve più eventi sopra Mc).")
 
    
-st.markdown("### Timeline")
+st.header("Timeline")
 # Time distribution
 df['year_month'] = df['time'].dt.to_period('M').astype(str)
 counts = df.groupby('year_month').size().reset_index(name='counts')
-fig_hist = px.bar(counts, x='year_month', y='counts', title="Eventi per Mese", labels={"year_month": "Mese", "counts": "Numero di Eventi"})
+fig_hist = px.bar(counts, x='year_month', y='counts', title="Eventi per mese", labels={"year_month": "Mese", "counts": "Numero di eventi"})
 fig_hist.update_xaxes(showticklabels=True)
 st.plotly_chart(fig_hist, width="stretch")
 
 
-st.markdown("### Istogramma dei tempi di Attesa")
+st.header("Istogramma dei tempi di attesa")
 # Calculate Inter-event times
 df_sorted = df.sort_values("time")
 df_sorted['delta_time'] = df_sorted['time'].diff().dt.total_seconds() / 3600.0 # hours
@@ -96,7 +97,7 @@ fig_wait = px.histogram(df_clean[df_clean['delta_time'] < 100], x="delta_time", 
 st.plotly_chart(fig_wait, width="stretch")
 
 
-st.markdown("### Pattern Spazio-Temporale")
+st.header("Pattern spazio-temporale")
 fig_st = px.scatter(
     df, 
     x="time", 

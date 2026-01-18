@@ -18,41 +18,17 @@ df, years, depth, magnitude = Sidebar.apply_filters(unfiltered_df)
 
 
 st.set_page_config(
-    # page_title="Home",
-    # page_icon="🌋",
     layout="wide",
     initial_sidebar_state="expanded",
-    menu_items={
-        'About': "## Earthquake Analysis Dashboard\nThis dashboard provides insights into seismic activity using interactive visualizations and statistics.",
-    }
 )
 
 
-# Custom CSS
-# st.markdown("""
-# <style>
-#     .stApp {
-#         background-color: #0e1117;
-#         color: #fafafa;
-#     }
-#     .metric-card {
-#         background-color: #262730;
-#         padding: 20px;
-#         border-radius: 10px;
-#         border: 1px solid #4a4a4a;
-#         box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-#     }
-#     h1, h2, h3 {
-#         color: #ff4b4b; /* Streamlit Red/Orange */
-#     }
-# </style>
-# """, unsafe_allow_html=True)
-
+st.title("Dashboard sismica")
 
 
 @st.fragment
 def render_map_with_interaction(df):
-    # st.markdown("### Mappa degli Eventi Sismici")
+    st.header("Mappa degli eventi sismici")
     df["name"] = df["time"].dt.strftime("Evento %Y-%m-%d %H:%M:%S")
     fig_map = px.scatter_map(
         df,
@@ -76,23 +52,23 @@ def render_map_with_interaction(df):
         zoom=5,
         center={"lat": 42.0, "lon": 12.5},
         map_style="open-street-map",
-        title="Mappa degli Eventi Sismici",
+        title="",
         height=800,
     )
     fig_map.update_traces(unselected=dict(marker=dict(opacity=0.7))) # do not blur unselected markers, keep default opacity
     event = st.plotly_chart(fig_map, width="stretch", on_select="rerun", selection_mode="points")
 
     if event and event.selection and event.selection.points:
-        # Recupera l'indice del punto selezionato
+        # Retrieve the index of the selected point
         point = event.selection.points[0]
         # Handle both object and dict access just in case, but error said dict
         point_idx = point["point_index"] if isinstance(point, dict) else point.point_index
-        # Validazione dell'indice
+        # Index validation
         if point_idx < len(df):
             selected_event = df.iloc[point_idx]
             
             st.markdown("---")
-            st.markdown(f"### Analisi Sismica: Evento del {selected_event['time']}")
+            st.header(f"Analisi sismica: evento del {selected_event['time']}")
             
             col_wave_info, col_wave_plot = st.columns([1, 3])
             
@@ -171,8 +147,8 @@ with col1:
     render_map_with_interaction(df)
 
 with col2:
-    st.markdown("### Statistiche")
-    st.metric("Totale Eventi", len(df))
+    st.header("Statistiche")
+    st.metric("Totale eventi", len(df))
     if not df.empty:
         max_event = get_max_event(df)
         if max_event is not None:
@@ -183,13 +159,13 @@ with col2:
 
         mean_mag = df['magnitude'].mean()
         std_mag = df['magnitude'].std()
-        st.metric("Magnitudo Media", f"{mean_mag:.2f}")
-        st.metric("Deviazione Std Magnitudo", f"{std_mag:.2f}")
+        st.metric("Magnitudo media", f"{mean_mag:.2f}")
+        st.metric("Deviazione std magnitudo", f"{std_mag:.2f}")
 
-        st.metric("Mese con più Eventi",
+        st.metric("Mese con più eventi",
                   f"{df['time'].dt.to_period('M').mode()[0]} ({len(df[df['time'].dt.to_period('M') == df['time'].dt.to_period('M').mode()[0]])} eventi)")
         
-        st.metric("Area più Attiva (Lat/Lon)",
+        st.metric("Area più attiva (Lat/Lon)",
                   f"({df['latitude'].mode()[0]:.2f}, {df['longitude'].mode()[0]:.2f})")
     else:
         max_event = None

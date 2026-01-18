@@ -13,11 +13,11 @@ from utils.ai_assistant import render_ai_assistant
 from utils.seismology import fft_analysis
 
 st.set_page_config(
-    # page_title="Signal Lab", 
-    # page_icon="🔬", 
     layout="wide",
     initial_sidebar_state="expanded",
 )
+
+st.title("Segnali sismici")
 
 with st.sidebar:
     st.markdown("### Impostazioni")
@@ -130,7 +130,7 @@ def render_tab(station):
         st.warning("In attesa di dati...")
         return
 
-    st.markdown (f"### Stazione: {stations_names[station]} ({station})")
+    st.subheader(f"Stazione: {stations_names[station]} ({station})")
 
     col1, col2 = st.columns([3, 1])
 
@@ -159,7 +159,7 @@ def render_tab(station):
         df['z_score_inst'] = (df['velocity'] - df['rolling_mean']).abs() / (df['rolling_std'] + 1e-6)
         max_z = df['z_score_inst'].max()
         # avg_z = df['z_score_inst'].mean()
-        st.metric("Max Z-Score (Allarme)", f"{max_z:.1f}", delta="CRITICAL" if max_z > 5 else "NORMAL")
+        st.metric("Max Z-Score (allarme)", f"{max_z:.1f}", delta="CRITICAL" if max_z > 5 else "NORMAL")
         
         # Update status for AI Context
         if 'realtime_status' not in st.session_state: st.session_state.realtime_status = {}
@@ -169,7 +169,7 @@ def render_tab(station):
         }
 
         if max_z > 5:
-            st.error("🚨 ALLARME SISMICO ATTIVATO")
+            st.error("ALLARME SISMICO ATTIVATO")
             st.write("Trigger immediato (< 2s)")
 
 
@@ -206,15 +206,15 @@ def render_realtime_dashboard():
 
 # --- Realtime Section ---
 
-st.markdown("## 📊 Segnali in tempo reale")
+st.header("Segnali in tempo reale")
 render_realtime_dashboard()
 
 # --- Comparison Section ---
 
 st.markdown("---")
-st.markdown("## 📊 Confronto Eventi: Naturale vs Antropico")
+st.header("Confronto eventi: Naturale vs antropico")
 
-event_tabs = st.tabs(["🟢 Evento Naturale (Terremoto Campania)", "🔵 Evento Antropico (Festa Scudetto)"])
+event_tabs = st.tabs(["Evento naturale (Terremoto Campania)", "Evento antropico (Festa scudetto)"])
 
 # Load comparison data
 @st.cache_data
@@ -228,10 +228,10 @@ quake_df, napoli_df = load_comparison_data()
 
 def render_comparison_tab(df, title, color):
     if df is None:
-        st.warning("⚠️ Dati non trovati. Esegui `scripts/fetch_data.py`.")
+        st.warning("Dati non trovati. Esegui `scripts/fetch_data.py`.")
         return
 
-    st.markdown(f"### {title}")
+    st.subheader(f"{title}")
     
     # Time Domain
     st.markdown("**Dominio del tempo**")
@@ -264,7 +264,7 @@ if os.path.exists(max_event_path):
     else:
         quake_title = "Terremoto (Max Campi Flegrei)"
 else:
-    st.warning("⚠️ Dati non trovati. Esegui `scripts/fetch_data.py`.")
+    st.warning("Dati non trovati. Esegui `scripts/fetch_data.py`.")
     quake_title = "Terremoto (Max Campi Flegrei)"
 
 with event_tabs[0]:
@@ -277,7 +277,7 @@ with event_tabs[0]:
 with event_tabs[1]:
     render_comparison_tab(
         napoli_df, 
-        "Festa Scudetto Napoli (Stadio Maradona)", 
+        "Festa scudetto Napoli (Stadio Maradona)", 
         "blue"
     )
 

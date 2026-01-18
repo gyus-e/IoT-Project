@@ -3,6 +3,7 @@ from google import genai
 import streamlit.components.v1 as components
 import os
 from dotenv import load_dotenv
+import time
 
 load_dotenv()
 
@@ -86,8 +87,6 @@ def render_chat_content(context_text):
         
         # Display spinner inside the chat container
         with chat_container:
-            # Ensure we import time if not already available in this scope
-            import time
             
             # 1. Scroll to BOTTOM to show "Sto pensando..." (Inject JS *outside* the message bubble to avoid empty space)
             ts_start = int(time.time() * 1000)

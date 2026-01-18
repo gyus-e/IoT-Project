@@ -17,22 +17,21 @@ df, years, depth, magnitude = Sidebar.apply_filters(unfiltered_df)
 
 
 st.set_page_config(
-    # page_title="Macro Analysis", 
-    # page_icon="🌍", 
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
+st.title("Allerte e anomalie")
 
-st.markdown("### Analisi Sismologica (Gutenberg-Richter)")
+st.header("Analisi sismologica (Gutenberg-Richter)")
 
-# Utilizziamo direttamente il dataframe filtrato dall'utente per tutte le statistiche
-# Questo permette all'esperto di vedere come cambiano i parametri (b-value) 
-# al variare dei filtri (es. taglio magnitudo).
+# Directly use the user's filtered dataframe for all statistics.
+# This allows the expert to see how parameters (b-value) change 
+# with filters (e.g. magnitude cut).
 if df.empty:
     st.warning("Nessun dato selezionato per l'analisi statistica.")
 else:
-    # 2. Stima Parametri G-R su dati FILTRATI
+    # 2. Estimate G-R Parameters on FILTERED data
 
     gr_params = calculate_gutenberg_richter(df)
     mc = gr_params['mc']
@@ -40,15 +39,15 @@ else:
     a_value = gr_params['a_value']
     n_total = gr_params['n_total']
     
-    # Se mc torna NaN (es. dataframe vuoto ma non intercettato prima), fallback a 0.0 per display
+    # If Mc returns NaN (e.g., empty dataframe not caught earlier), fallback to 0.0 for display
     if np.isnan(mc): mc = 0.0
 
     if not gr_params['valid']:
         st.warning(f"Troppi pochi eventi ({n_total}) nel range selezionato (>= Mc={mc}) per calcolare un b-value affidabile.")
 
-    # Meteiche UI
+    # UI Metrics
     c1, c2, c3 = st.columns(3)
-    c1.metric("Magnitudo Completezza (Mc)", f"{mc}", help="Moda della magnitudo nel dataset filtrato.")
+    c1.metric("Magnitudo completezza (Mc)", f"{mc}", help="Moda della magnitudo nel dataset filtrato.")
     if not np.isnan(b_value):
         c2.metric("b-value (Trend)", f"{b_value:.2f}", help="Pendenza della distribuzione G-R calcolata sui dati filtrati.")
         c3.metric("a-value (Sismicità)", f"{a_value:.2f}", help="Indica il tasso di attività sismica del dataset filtrato.")
@@ -57,10 +56,10 @@ else:
         c3.metric("a-value (Sismicità)", "N/A")
 
 
-    # 3. Calcolo Tempo di Ritorno (Return Period)
+    # 3. Calculate Return Period
     
-    if not np.isnan(b_value): # Procediamo solo se abbiamo parametri validi
-        # Calcolo durata periodo in anni dal dataset filtrato
+    if not np.isnan(b_value): # Proceed only if we have valid parameters
+        # Calculate period duration in years from filtered dataset
         if not df.empty:
             delta_t_years = (df['time'].max() - df['time'].min()).days / 365.25
             if delta_t_years < 0.01: delta_t_years = 0.01 
@@ -77,11 +76,11 @@ else:
 
         df['return_period_years'] = df['magnitude'].apply(calc_return_period)
 
-        # Plotting & Allerte
+        # Plotting & Alerts
         st.divider()
-        st.subheader("Analisi Anomalie Probabilistiche")
+        st.header("Analisi anomalie probabilistiche")
         
-        tr_thresh = st.slider("Soglia 'Rarità' (Tempo di Ritorno in Anni)", 
+        tr_thresh = st.slider("Soglia 'rarità' (Tempo di ritorno in anni)", 
                               min_value=0.1, max_value=100.0, value=1.0, step=0.1)
 
         anomalies = df[df['return_period_years'] > tr_thresh]
@@ -90,8 +89,8 @@ else:
                             size="magnitude",
                             color="return_period_years",
                             color_continuous_scale="Turbo",
-                            title="Rarità degli Eventi (Tempo di Ritorno)",
-                            labels={"return_period_years": "Tempo di Ritorno Stimato (Anni)", "time": "Data", "magnitude": "Magnitudo"},
+                            title="Rarità degli eventi (Tempo di ritorno)",
+                            labels={"return_period_years": "Tempo di ritorno stimato (anni)", "time": "Data", "magnitude": "Magnitudo"},
                             log_y=True) 
         
         fig_tr.add_hline(y=tr_thresh, line_dash="dash", line_color="red", annotation_text=f"Soglia > {tr_thresh} anni")
