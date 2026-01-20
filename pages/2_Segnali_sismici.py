@@ -22,7 +22,6 @@ st.title("Segnali sismici")
 with st.sidebar:
     st.markdown("### Impostazioni")
     refresh_rate_options = {
-        "5 secondi": 5,
         "30 secondi": 30,
         "1 minuto": 60,
         "2 minuti": 120,
@@ -31,7 +30,7 @@ with st.sidebar:
     selected_refresh_label = st.selectbox(
         "Tempo di aggiornamento",
         options=list(refresh_rate_options.keys()),
-        index=2 # Default to 1 minute
+        index=1 # Default to 1 minute
     )
     refresh_rate = refresh_rate_options[selected_refresh_label]
 
