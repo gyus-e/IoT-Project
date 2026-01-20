@@ -177,14 +177,19 @@ if not df.empty:
     STATISTICHE DATASET FILTRATO:
     - Numero eventi: {len(df)}
     - Magnitudo Media: {df['magnitude'].mean():.2f}
-    - Magnitudo Max: {df['magnitude'].max()}
+    - Deviazione Standard Magnitudo: {df['magnitude'].std():.2f}
     - Profondità Media: {df['depth'].mean():.2f} km
+    - Profondità Massima: {df['depth'].max()} km
+    - Profondità Minima: {df['depth'].min()} km
+    - Anno con più eventi: {df['time'].dt.year.mode()[0]} ({len(df[df['time'].dt.year == df['time'].dt.year.mode()[0]])} eventi)
+    - Mese con più eventi: {df['time'].dt.to_period('M').mode()[0]} ({len(df[df['time'].dt.to_period('M') == df['time'].dt.to_period('M').mode()[0]])} eventi)
+    - Area più attiva (Lat/Lon): ({df['latitude'].mode()[0]:.2f}, {df['longitude'].mode()[0]:.2f})
     """
     
     max_event = get_max_event(df)
     if max_event is not None:
         stats_context += f"""
-        EVENTO MASSIMO:
+        EVENTO CON MAGNITUDO MASSIMA:
         - Data: {max_event['time']}
         - Magnitudo: {max_event['magnitude']}
         - Posizione: {max_event['latitude']}, {max_event['longitude']}
