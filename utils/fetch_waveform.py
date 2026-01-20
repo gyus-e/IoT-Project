@@ -3,7 +3,7 @@ from obspy.clients.fdsn import Client
 from obspy.geodetics import locations2degrees
 import pandas as pd
 
-client = Client("INGV")
+client = Client("INGV", force_redirect=True)
 
 def get_nearby_stations(latitude: float, longitude: float, starttime: UTCDateTime, max_radius: float = 1.0, max_stations: int = 5):
     """

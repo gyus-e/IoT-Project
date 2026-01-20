@@ -7,7 +7,7 @@ import pandas as pd
 DATA_DIR = os.path.join(os.path.dirname(__file__), '..', 'data')
 os.makedirs(DATA_DIR, exist_ok=True)
 
-client = Client("INGV")
+client = Client("INGV", force_redirect=True)
 chunks = [
     (UTCDateTime("2000-01-01"), UTCDateTime("2001-12-31")),
     (UTCDateTime("2002-01-01"), UTCDateTime("2003-12-31")),
