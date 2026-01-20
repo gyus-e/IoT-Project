@@ -112,7 +112,6 @@ def render_chat_content(context_text):
         # Scroll to the top of the new message
         # We target the last stChatMessage element and scroll it to the TOP (block='start')
         # We add a longer delay (1sec) and a retry mechanism to fight against Streamlit's auto-scroll
-        import time
         unique_id = int(time.time() * 1000)
         js_scroll = f"""
         <script>
