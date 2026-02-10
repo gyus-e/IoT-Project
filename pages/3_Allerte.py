@@ -1,6 +1,7 @@
 import streamlit as st
 import plotly.express as px
 import numpy as np
+import pandas as pd
 
 from utils.sidebar import Sidebar
 from utils.load_data import load_data
@@ -80,26 +81,128 @@ else:
         tr_thresh = st.slider("Soglia 'rarità' (Tempo di ritorno in anni)", 
                               min_value=0.1, max_value=100.0, value=1.0, step=0.1)
 
-        anomalies = df[df['return_period_years'] > tr_thresh]
 
-        fig_tr = px.scatter(df, x="time", y="return_period_years",
-                            size="magnitude",
-                            color="return_period_years",
-                            color_continuous_scale="Turbo",
-                            title="Rarità degli eventi (Tempo di ritorno)",
-                            labels={"return_period_years": "Tempo di ritorno stimato (anni)", "time": "Data", "magnitude": "Magnitudo"},
-                            log_y=True) 
-        
-        fig_tr.add_hline(y=tr_thresh, line_dash="dash", line_color="red", annotation_text=f"Soglia > {tr_thresh} anni")
-        st.plotly_chart(fig_tr, width="stretch")
+        anomalies = df[df['return_period_years'] > tr_thresh].copy()
 
         if not anomalies.empty:
-            st.error(f"Rilevati {len(anomalies)} eventi 'rari' nel dataset selezionato!")
+            st.markdown("---")
+            st.subheader("Verifica Storica: Teoria vs Realtà")
+            st.markdown(f"""
+            Per ogni evento anomalo, cerchiamo nel catalogo storico completo (anche fuori dai filtri attuali) 
+            l'ultima volta che si è verificato un evento di magnitudo simile o superiore.
+            
+            Se l'**Intervallo osservato** è minore del **tempo di ritorno teorico**, l'evento è considerato "anticipato".
+            """)
+
+            # Ensure we look at the full history sorted by time
+            full_history = unfiltered_df.sort_values('time')
+
+            def get_historical_check(row):
+                current_mag = row['magnitude']
+                current_time = row['time']
+
+                # 1. OPTIMIZATION: Filter first only for events with >= Magnitude
+                # This drastically reduces the search space (e.g. from 50k to 10 events)
+                relevant_events = full_history[full_history['magnitude'] >= current_mag]
+                
+                if relevant_events.empty:
+                    return None, None
+
+                # 2. BINARY SEARCH: Find the insertion point of the current event in the timeline
+                # We want the last event BEFORE the current time.
+                # searchsorted returns the index where current_time would be inserted to maintain order.
+                idx = relevant_events['time'].searchsorted(current_time, side='left')
+                
+                # If idx > 0, it means there is at least one event before this one
+                if idx > 0:
+                    last_event = relevant_events.iloc[idx - 1]
+                    last_date = last_event['time']
+                    last_mag = last_event['magnitude']
+                    
+                    if last_date >= current_time:
+                        return None, None, None
+
+                    days_diff = (current_time - last_date).days
+                    years_diff = days_diff / 365.25
+                    return last_date, years_diff, last_mag
+                else:
+                    return None, None, None
+
+            # Apply calculation to anomalies
+            results = anomalies.apply(get_historical_check, axis=1, result_type='expand')
+            anomalies['last_similar_date'] = results[0]
+            anomalies['observed_interval_years'] = results[1]
+            anomalies['last_similar_mag'] = results[2]
+            
+            # Calculate difference (Positive = Late/Safe, Negative = Premature/Risk)
+            # We fill NaNs with 0 for plotting purpose but handle them in display
+            anomalies['diff_years'] = anomalies['observed_interval_years'] - anomalies['return_period_years']
+            
+            # --- PLOT UPDATED WITH HISTORICAL DATA ---
+            # We want to color by "Prematureness". 
+            # Red = Observed << Theoretical (Negative Diff)
+            # Blue = Observed >> Theoretical (Positive Diff)
+            # Grey = No historical data
+            
+            fig_tr = px.scatter(anomalies, x="time", y="return_period_years",
+                                size="magnitude",
+                                color="diff_years",
+                                color_continuous_scale="RdBu", # Red for negative (bad), Blue for positive (good)
+                                color_continuous_midpoint=0,
+                                title="Anomalie: Tempo di Ritorno Teorico vs Reale",
+                                labels={
+                                    "return_period_years": "TR Teorico (anni)", 
+                                    "time": "Data Evento", 
+                                    "magnitude": "Magnitudo",
+                                    "diff_years": "Differenza (anni)",
+                                    "observed_interval_years": "TR Reale (anni)",
+                                    "last_similar_mag": "Mag Simile"
+                                },
+                                hover_data={
+                                    "observed_interval_years": ":.1f",
+                                    "diff_years": ":+.1f",
+                                    "return_period_years": ":.1f",
+                                    "last_similar_mag": ":.1f",
+                                    "magnitude": ":.1f"
+                                },
+                                log_y=True) 
+            
+            fig_tr.add_hline(y=tr_thresh, line_dash="dash", line_color="red", annotation_text=f"Soglia > {tr_thresh} anni")
+            st.plotly_chart(fig_tr, width="stretch")
+
+
+            st.error(f"Rilevati {len(anomalies)} eventi con tempo di ritorno teorico > {tr_thresh} anni!")
+            
+            # Formatting for display table
+            display_cols = ['time', 'magnitude', 'return_period_years', 'last_similar_date', 'last_similar_mag', 'observed_interval_years', 'diff_years']
+            
+            def highlight_premature(s):
+                if pd.isna(s['observed_interval_years']): return ['' for _ in s]
+                is_prem = s['observed_interval_years'] < s['return_period_years']
+                return ['background-color: rgba(255, 75, 75, 0.2)' if is_prem else '' for _ in s]
+
             st.dataframe(
-                anomalies[['time', 'magnitude', 'depth', 'return_period_years']]
+                anomalies[display_cols]
                 .sort_values('return_period_years', ascending=False)
                 .head(20)
-                .style.format({'return_period_years': "{:.2f}"}),
+                .style.format({
+                    'time': lambda t: t.strftime('%Y-%m-%d %H:%M'),
+                    'last_similar_date': lambda t: t.strftime('%Y-%m-%d %H:%M') if pd.notnull(t) else "Mai registrato",
+                    'last_similar_mag': "{:.1f}",
+                    'return_period_years': "{:.1f} anni",
+                    'observed_interval_years': "{:.1f} anni",
+                    'diff_years': "{:+.1f} anni"
+                })
+                .apply(highlight_premature, axis=1),
+                column_config={
+                    "time": "Data Evento",
+                    "magnitude": "Mag",
+                    "return_period_years": "TR Teorico",
+                    "last_similar_date": "Ultimo Simile",
+                    "last_similar_mag": "Mag Simile",
+                    "observed_interval_years": "TR Reale",
+                    "diff_years": "Differenza"
+                },
                 hide_index=True
             )
         else:
@@ -109,7 +212,7 @@ else:
 # --- AI Context Generation ---
 if df.empty:
     alerts_context = "Nessun dato."
-elif np.isnan(b_value):
+elif 'b_value' not in locals() or np.isnan(b_value):
     alerts_context = "Dati insufficienti per il calcolo del b-value e delle anomalie."
 else:
     alerts_context = f"""
@@ -120,14 +223,16 @@ else:
     
     if not anomalies.empty:
         alerts_context += f"\n    - EVENTI ANOMALI RILEVATI ({len(anomalies)}):\n"
-        # List top 5 anomalies
+        # List top 5 anomalies with historical check
         top_anomalies = anomalies.sort_values('return_period_years', ascending=False).head(5)
         for _, row in top_anomalies.iterrows():
-            alerts_context += f"      * Data: {row['time']}, Mag: {row['magnitude']}, TR: {row['return_period_years']:.1f} anni\n"
+            obs_int = f"{row['observed_interval_years']:.1f}" if pd.notnull(row['observed_interval_years']) else "N/A"
+            diff = f"{row['diff_years']:+.1f}" if pd.notnull(row.get('diff_years')) else "N/A"
+            alerts_context += f"      * Data: {row['time']}, Mag: {row['magnitude']}, TR Teorico: {row['return_period_years']:.1f}, TR Reale: {obs_int}, Diff: {diff}\n"
     else:
         alerts_context += "\n    - Nessuna anomalia rilevata con i filtri attuali."
 
 st.session_state['ai_context_global'] = alerts_context
 st.session_state['ai_context_selection'] = ""
 
-render_ai_assistant(context_text="Pagina Allerte: Analisi probabilistica del Tempo di Ritorno.")
+render_ai_assistant(context_text="Pagina Allerte: Analisi probabilistica del Tempo di Ritorno con verifica storica.")
