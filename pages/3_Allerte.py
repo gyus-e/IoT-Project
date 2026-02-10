@@ -109,6 +109,8 @@ else:
 # --- AI Context Generation ---
 if df.empty:
     alerts_context = "Nessun dato."
+elif np.isnan(b_value):
+    alerts_context = "Dati insufficienti per il calcolo del b-value e delle anomalie."
 else:
     alerts_context = f"""
     ANALISI ANOMALIE (Tempo di Ritorno):
