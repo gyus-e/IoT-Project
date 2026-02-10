@@ -99,14 +99,14 @@ GOOGLE_API_KEY="la_tua_chiave_api_qui"
 
 ### 5. Scarica i dati (Importante!)
 
-Prima di avviare l'applicazione, è necessario scaricare il catalogo sismico e le waveform di confronto. Esegui lo script dedicato:
+Prima di avviare l'applicazione, è necessario scaricare le due waveform di confronto usate come esempio. Esegui lo script dedicato:
 
 ```bash
 python scripts/fetch_data.py
 
 ```
 
-*Questo script scaricherà i dati necessari e li salverà nella cartella `data/`.*
+*Questo script scaricherà le due waveform di confronto e le salverà nella cartella `data/`.*
 
 ---
 

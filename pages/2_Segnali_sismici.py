@@ -225,12 +225,13 @@ def load_comparison_data():
 
 quake_df, napoli_df = load_comparison_data()
 
-def render_comparison_tab(df, title, color):
+def render_comparison_tab(df, title, date, color):
     if df is None:
-        st.warning("Dati non trovati. Esegui `scripts/fetch_data.py`.")
+        st.warning(f"Dati per {title} non trovati. Esegui `scripts/fetch_data.py`.")
         return
 
     st.subheader(f"{title}")
+    st.write(f"Data: {date}")
     
     # Time Domain
     st.markdown("**Dominio del tempo**")
@@ -251,25 +252,12 @@ def render_comparison_tab(df, title, color):
 
 # Get specific event info
 data_dir = os.path.join(os.path.dirname(__file__), '..', 'data')
-max_event_path = os.path.join(data_dir, "max_event_flegrei.csv")
-
-if os.path.exists(max_event_path):
-    max_e_df = pd.read_csv(max_event_path)
-    # It's a single row dataframe if saved via transpose
-    if not max_e_df.empty:
-        max_e = max_e_df.iloc[0]
-        date_str = pd.to_datetime(max_e['time']).strftime('%d/%m/%Y')
-        quake_title = f"Terremoto Campi Flegrei {date_str} (M{max_e['magnitude']})"
-    else:
-        quake_title = "Terremoto (Max Campi Flegrei)"
-else:
-    st.warning("Dati non trovati. Esegui `scripts/fetch_data.py`.")
-    quake_title = "Terremoto (Max Campi Flegrei)"
 
 with event_tabs[0]:
     render_comparison_tab(
         quake_df, 
-        quake_title, 
+        "Terremoto Campi Flegrei (M4.6)",
+        UTCDateTime("2025-03-13 00:25:02.349000"),
         "green"
     )
 
@@ -277,6 +265,7 @@ with event_tabs[1]:
     render_comparison_tab(
         napoli_df, 
         "Festa scudetto Napoli (Stadio Maradona)", 
+        UTCDateTime("2023-05-04T20:37:00"),
         "blue"
     )
 
@@ -291,8 +280,8 @@ else:
 
 comparison_context = f"""
 CONFRONTO EVENTI:
-1. {quake_title} (Naturale)
-2. Festa Scudetto Napoli (Antropico)
+1. Terremoto Campi Flegrei (M4.6) (2025-03-13 00:25:02.349000) (Naturale)
+2. Festa Scudetto Napoli (2023-05-04T20:37:00) (Antropico)
 """
 
 st.session_state['ai_context_global'] = realtime_context + "\n" + comparison_context

@@ -1,178 +1,37 @@
+import sys
 import os
+
+# Add the parent directory to sys.path to allow importing utils
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from utils.fetch_waveform import fetch_waveform
 from obspy import UTCDateTime
-from obspy.clients.fdsn import Client
-import pandas as pd
-
-# Configuration
-DATA_DIR = os.path.join(os.path.dirname(__file__), '..', 'data')
-os.makedirs(DATA_DIR, exist_ok=True)
-
-client = Client("INGV", force_redirect=True)
-chunks = [
-    (UTCDateTime("2000-01-01"), UTCDateTime("2001-12-31")),
-    (UTCDateTime("2002-01-01"), UTCDateTime("2003-12-31")),
-    (UTCDateTime("2004-01-01"), UTCDateTime("2005-12-31")),
-    (UTCDateTime("2006-01-01"), UTCDateTime("2007-12-31")),
-    (UTCDateTime("2008-01-01"), UTCDateTime("2009-12-31")),
-    (UTCDateTime("2010-01-01"), UTCDateTime("2011-12-31")),
-    (UTCDateTime("2012-01-01"), UTCDateTime("2013-12-31")),
-    (UTCDateTime("2014-01-01"), UTCDateTime("2015-12-31")),
-    (UTCDateTime("2016-01-01"), UTCDateTime("2017-12-31")),
-    (UTCDateTime("2018-01-01"), UTCDateTime("2019-12-31")),
-    (UTCDateTime("2020-01-01"), UTCDateTime("2021-12-31")),
-    (UTCDateTime("2022-01-01"), UTCDateTime("2023-12-31")),
-    (UTCDateTime("2024-01-01"), UTCDateTime("2025-12-31")),
-]
-
-def fetch_catalog():
-    print("Fetching Earthquake Catalog (2000-2025) in chunks...")
-    all_data = []
-
-    for starttime, endtime in chunks:
-        print(f"\t Requesting {starttime} to {endtime}...")
-
-        try:
-            catalog = client.get_events(
-                starttime=starttime, 
-                endtime=endtime, 
-                minmagnitude=2.5, 
-                minlatitude=27.0, 
-                maxlatitude=48.0, 
-                minlongitude=-7.0, 
-                maxlongitude=37.5,
-            )
-            
-            print(f"  -> Found {len(catalog)} events.")
-            
-            for event in catalog:
-
-                try:
-                    origin = event.origins[0]
-                    mag = event.magnitudes[0].mag
-
-                    event_data = {
-                        "time": origin.time.datetime,
-                        "latitude": origin.latitude,
-                        "longitude": origin.longitude,
-                        "depth": origin.depth / 1000.0 if origin.depth else 0, # km
-                        "magnitude": mag,
-                        "magnitude_type": event.magnitudes[0].magnitude_type if event.magnitudes else None,
-                        "azimuthal_gap": origin.quality.azimuthal_gap if origin.quality and origin.quality.azimuthal_gap else None,
-                        "used_phase_count": origin.quality.used_phase_count if origin.quality and origin.quality.used_phase_count else None,
-                        "standard_error": origin.quality.standard_error if origin.quality and origin.quality.standard_error else None,
-                        "horizontal_uncertainty": origin.origin_uncertainty.horizontal_uncertainty if origin.origin_uncertainty else None,
-                        "depth_uncertainty": origin.depth_errors.uncertainty if origin.depth_errors and origin.depth_errors.uncertainty else None,
-                    }
-
-                    all_data.append(event_data)
-
-                except IndexError:
-                    continue
-
-        except Exception as e:
-            print(f"  Error fetching chunk {starttime} to {endtime}: {e}")
-
-
-    if all_data:
-        df = pd.DataFrame(all_data)
-        # Sort by time
-        df = df.sort_values("time")
-        output_path = os.path.join(DATA_DIR, "catalog.csv")
-        df.to_csv(output_path, index=False)
-        print(f"Total Catalog saved to {output_path} ({len(df)} events)")
-        
-        fetch_comparison_waveforms(df)
-        
-    else:
-        print("No data fetched.")
-
-def fetch_comparison_waveforms(catalog_df):
-    print("\n--- Fetching Comparison Waveforms ---")
-    
-    # 1. Find Max Quake in Campi Flegrei
-    flegrei_events = catalog_df[
-        (catalog_df['latitude'] >= 40.75) & (catalog_df['latitude'] <= 40.90) &
-        (catalog_df['longitude'] >= 13.90) & (catalog_df['longitude'] <= 14.25)
-    ]
-    
-    if flegrei_events.empty:
-        print("No events found in Campi Flegrei.")
-        return
-    
-    max_event = flegrei_events.loc[flegrei_events['magnitude'].idxmax()]
-    if max_event is None:
-        print("No events found in Campi Flegrei.")
-        return
-
-    print(f"Max Event in Campi Flegrei: {max_event['time']} M{max_event['magnitude']} at {max_event['latitude']}, {max_event['longitude']}")
-    max_event_flegrei_path = os.path.join(DATA_DIR, "max_event_flegrei.csv")
-    max_event_flegrei_df = pd.DataFrame(max_event).T
-    max_event_flegrei_df.to_csv(max_event_flegrei_path, index=False)
-
-    # 2. Download Quake Waveform
-    success = save_waveform(
-        filename=f"waveform_max_event_flegrei.csv", 
-        starttime=UTCDateTime(max_event['time']) - 60, # Start 1 min before
-        duration=300, # 5 mins
-        station="OVO", 
-        channel="HHZ"
-    )
-    if success:
-        print(f"Successfully downloaded waveform for max event in Campi Flegrei.")
-    else:
-        print(f"Failed to download waveform for max event in Campi Flegrei.")
-
-
-    # 2023-05-04 20:37:00 UTC (Approximate time of goal/final whistle celebration)
-    scudetto_time = UTCDateTime("2023-05-04T20:37:00")
-    success = save_waveform(
-        filename=f"waveform_napoli_scudetto.csv",
-        starttime=scudetto_time, 
-        duration=300, 
-        station="OVO", 
-        channel="HHZ"
-    )
-    if success:
-        print(f"Successfully downloaded waveform for Napoli Scudetto.")
-    else:
-        print(f"Failed to download waveform for Napoli Scudetto.")
-
-
-def save_waveform(filename, starttime, duration, station, channel):
-    print(f"Downloading {filename} from {station} starting {starttime}...")
-    try:
-        st = client.get_waveforms(
-            network="IV", 
-            station=station, 
-            location="*", 
-            channel=channel, 
-            starttime=starttime, 
-            endtime=starttime + duration
-        )
-        if len(st) > 0:
-            tr = st[0]
-            # Resample strictly to 100Hz to ensure consistent data
-            tr.resample(100.0)
-            
-            # Create DF
-            times = pd.to_datetime(tr.times("timestamp"), unit="s")
-            df_wave = pd.DataFrame({
-                "times": times,
-                "velocity": tr.data
-            })
-            
-            out_path = os.path.join(DATA_DIR, filename)
-            df_wave.to_csv(out_path, index=False)
-            print(f"Saved {filename} ({len(df_wave)} samples).")
-            return True
-        else:
-            print(f"No waveforms found for {filename} at {station}.")
-            return False
-            
-    except Exception as e:
-        print(f"Error fetching {filename} from {station}: {e}")
-        return False
-
 
 if __name__ == "__main__":
-    fetch_catalog()
+
+    # Max event Campi Flegrei: 2025-03-13 00:25:02.349000 M4.6 at 40.818833, 14.1575
+    df_max_event = fetch_waveform(
+        station="OVO", 
+        starttime=UTCDateTime("2025-03-13T00:25:02.349000"),
+        duration=300
+    )
+
+    if df_max_event is not None:
+        df_max_event.to_csv("data/waveform_max_event_flegrei.csv", index=False)
+        print(f"Successfully downloaded waveform for Max Event.")
+    else:
+        print("Failed to download waveform for Max Event.")
+
+    
+    # Napoli scudetto
+    df_scudetto = fetch_waveform(
+        station="OVO", 
+        starttime=UTCDateTime("2023-05-04T20:37:00"), # (Approximate time of goal/final whistle celebration)
+        duration=300
+    )
+
+    if df_scudetto is not None:
+        df_scudetto.to_csv("data/waveform_napoli_scudetto.csv", index=False)
+        print(f"Successfully downloaded waveform for Napoli Scudetto.")
+    else:
+        print("Failed to download waveform for Napoli Scudetto.")

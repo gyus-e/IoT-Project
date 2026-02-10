@@ -1,4 +1,4 @@
 .env
-*.csv
+data/catalog.csv
 __pycache__
 .vscode
