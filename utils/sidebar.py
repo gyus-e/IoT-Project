@@ -26,7 +26,12 @@ class Sidebar:
         minlongitude = -7.0 
         maxlongitude = 37.5
 
-        cls.years = st.sidebar.slider("Periodo", min_year, max_year, (min_year, max_year))
+
+        if min_year == max_year:
+            st.sidebar.info(f"Anno disponibile: {min_year}")
+            cls.years = (min_year, max_year)
+        else:
+            cls.years = st.sidebar.slider("Periodo", min_year, max_year, (min_year, max_year))
         cls.depth = st.sidebar.slider("Profondità (km)", 0.0, max_depth, (0.0, max_depth), 10.0)
         cls.latitude = st.sidebar.slider("Latitudine", minlatitude, maxlatitude, (minlatitude, maxlatitude), 0.1)
         cls.longitude = st.sidebar.slider("Longitudine", minlongitude, maxlongitude, (minlongitude, maxlongitude), 0.1)
