@@ -11,7 +11,7 @@ def load_data():
     if not os.path.exists(catalog_path):
         return None
     df = pd.read_csv(catalog_path)
-    df['time'] = pd.to_datetime(df['time'])
+    df['time'] = pd.to_datetime(df['time'], format='ISO8601')
     return df
 
 df = load_data()
