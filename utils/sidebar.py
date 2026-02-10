@@ -13,8 +13,8 @@ class Sidebar:
         st.sidebar.header("Filtri")
 
         if df is None:
-            st.error("Dataset 'catalog.csv' non trovato. Esegui lo script di setup!")
-            st.stop()
+            st.session_state['missing_catalog'] = True
+            st.switch_page("pages/4_Download_dati.py")
             
         min_year = int(df['time'].dt.year.min()) 
         max_year = int(df['time'].dt.year.max())

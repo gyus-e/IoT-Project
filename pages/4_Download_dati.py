@@ -10,6 +10,15 @@ st.set_page_config(
 )
 
 st.title("Download Dati Sismici")
+if st.session_state.get('missing_catalog'):
+    st.toast("Catalogo non trovato! Scarica i dati per proseguire.", icon="⚠️")
+    st.session_state['missing_catalog'] = False
+
+if "download_success" in st.session_state:
+    st.success(st.session_state["download_success"])
+    st.balloons()
+    del st.session_state["download_success"]
+
 st.markdown("In questa pagina puoi scaricare i dati sismici aggiornati direttamente dal database INGV.")
 
 # --- Filters ---
@@ -165,7 +174,10 @@ if st.button("Scarica Dati", type="primary"):
             os.makedirs(data_dir, exist_ok=True)
             final_df.to_csv(file_path, index=False)
             
-            st.success(f"Operazione completata! Dataset aggiornato. Nuovi: {total_events}. Totale: {len(final_df)}.")
-            st.balloons()
+            from utils.load_data import load_data
+            load_data.clear()
+            
+            st.session_state["download_success"] = f"Operazione completata! Dataset aggiornato. Nuovi: {total_events}. Totale: {len(final_df)}."
+            st.rerun()
         else:
              st.warning("Nessun dato finale disponibile.")

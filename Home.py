@@ -10,9 +10,6 @@ from utils.seismology import fft_analysis
 
 
 unfiltered_df = load_data()
-if unfiltered_df is None:
-    st.error("Dataset 'catalog.csv' non trovato. Esegui lo script di setup!")
-    st.stop()
 Sidebar.init_sidebar(unfiltered_df)
 df, years, depth, magnitude = Sidebar.apply_filters(unfiltered_df)
 
