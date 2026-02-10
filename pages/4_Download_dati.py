@@ -33,9 +33,7 @@ date_range = st.date_input(
     "Seleziona intervallo date",
     value=(default_start, today),
     min_value=datetime.date(1980, 1, 1),
-    max_value=today,
-    format="DD/MM/YYYY",
-    
+    max_value=today
 )
 
 if len(date_range) == 2:
