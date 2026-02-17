@@ -172,15 +172,13 @@ else:
             # Formatting for display table
             display_cols = ['time', 'magnitude', 'return_period_years', 'last_similar_date', 'last_similar_mag', 'observed_interval_years', 'diff_years']
             
-            def highlight_premature(s):
-                if pd.isna(s['observed_interval_years']): return ['' for _ in s]
-                is_prem = is_premature(s)
-                return ['background-color: rgba(255, 75, 75, 0.2)' if is_prem else '' for _ in s]
-
 
             def is_premature(s):
+                if pd.isnull(s['observed_interval_years']):
+                    return False
                 return s['return_period_years'] - s['observed_interval_years'] > delta * s['return_period_years']
-                
+
+
             premature_events = rare_events[rare_events.apply(is_premature, axis=1)]
             st.error(f"Rilevati {len(premature_events)} eventi con rarità maggiore di {tr_thresh:.0f} anni e tempo di ritorno reale minore del tempo di ritorno teorico di {delta*100:.1f}%!")
 
