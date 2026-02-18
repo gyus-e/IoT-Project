@@ -130,7 +130,7 @@ else:
         
 
         anomaly_threshold = st.slider("Percentuale di prematurità per allerta", 
-                              min_value=1.0, max_value=99.0, value=80.0, step=1.0) / 100.0
+                              min_value=1.0, max_value=100.0, value=80.0, step=1.0) / 100.0
 
         # Apply calculation to anomalies
         # df = df.sort_values('time').reset_index(drop=True)
