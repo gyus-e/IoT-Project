@@ -194,7 +194,7 @@ else:
                 "return_period_years": "Tempo di ritorno teorico",
                 "observed_interval_years": "Tempo di ritorno reale",
                 "diff_years": "Differenza",
-                "last_similar_mag_date": "Ultimo Mag Maggiore",
+                "last_similar_date": "Ultimo Mag Maggiore",
                 "last_similar_mag": "Mag Maggiore",
             }
 
