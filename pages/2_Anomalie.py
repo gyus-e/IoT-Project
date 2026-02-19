@@ -169,7 +169,7 @@ else:
                                 "magnitude": "Magnitudo",
                                 "diff_years": "Differenza (anni)",
                                 "observed_interval_years": "TR Reale (anni)",
-                                "last_similar_mag": "Mag Simile"
+                                "last_similar_mag": "Mag Greater"
                             },
                             hover_data={
                                 "observed_interval_years": ":.1f",
@@ -194,8 +194,8 @@ else:
                 "return_period_years": "Tempo di ritorno teorico",
                 "observed_interval_years": "Tempo di ritorno reale",
                 "diff_years": "Differenza",
-                "last_similar_date": "Ultimo Simile",
-                "last_similar_mag": "Mag Simile",
+                "last_similar_mag_date": "Ultimo Mag Maggiore",
+                "last_similar_mag": "Mag Maggiore",
             }
 
         st.error(f"Rilevati {len(premature_events)} eventi con tempo di ritorno reale minore del {anomaly_threshold*100:.1f}% del tempo di ritorno teorico!")
