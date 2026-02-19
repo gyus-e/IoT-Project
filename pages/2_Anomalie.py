@@ -101,9 +101,8 @@ if df.empty:
     alerts_context = "Nessun dato."
 
 else:
-    # Estimate G-R Parameters on FILTERED data
-
-    gr_params = calculate_gutenberg_richter(df)
+    # Estimate G-R Parameters on UNFILTERED data
+    gr_params = calculate_gutenberg_richter(unfiltered_df)
     mc = gr_params['mc']
     b_value = gr_params['b_value']
     a_value = gr_params['a_value']
@@ -120,8 +119,8 @@ else:
     # Proceed only if we have valid parameters
     if not np.isnan(b_value): 
         # Calculate period duration in years from filtered dataset
-        if not df.empty:
-            delta_t_years = (df['time'].max() - df['time'].min()).days / 365.25
+        if unfiltered_df is not None and not unfiltered_df.empty:
+            delta_t_years = (unfiltered_df['time'].max() - unfiltered_df['time'].min()).days / 365.25
             if delta_t_years < 0.01: delta_t_years = 1.0
         else:
             delta_t_years = 1.0
