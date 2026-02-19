@@ -12,6 +12,7 @@ from utils.seismology import calculate_gutenberg_richter
 
 def calc_return_period(m, delta_t_years=1.0):
     # Gutenberg-Richter: log10(N) = a - bM
+    # N is the number of events with magnitude >= M in the dataset period (delta_t_years)
     log_n = a_value - (b_value * m)
     n_predicted = 10 ** log_n
     
@@ -21,7 +22,7 @@ def calc_return_period(m, delta_t_years=1.0):
 
 
 # TODO: Refactor by calculating return time offline when loading data
-def get_historical_check(df, mag_tolerance=0.2):
+def get_historical_check(df):
     """
     Vectorized historical check - processes all events at once.
     Returns arrays for last_date, years_diff, last_mag
@@ -51,8 +52,8 @@ def get_historical_check(df, mag_tolerance=0.2):
         if i == 0:
             continue
             
-        # Find events within magnitude tolerance that occurred before current event
-        mask = (np.abs(mags[:i] - current_mag) <= mag_tolerance)
+        # Find events within magnitude greater than current event
+        mask = (mags[:i] >= current_mag)
         
         if mask.any():
             # Get the most recent matching event
@@ -134,7 +135,7 @@ else:
 
         # Apply calculation to anomalies
         # df = df.sort_values('time').reset_index(drop=True)
-        last_dates, obs_intervals, last_mags = get_historical_check(df, mag_tolerance=0.2)
+        last_dates, obs_intervals, last_mags = get_historical_check(df)
 
         df['last_similar_date'] = last_dates
         df['observed_interval_years'] = obs_intervals
